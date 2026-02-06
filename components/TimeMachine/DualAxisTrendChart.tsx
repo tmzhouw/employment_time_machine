@@ -11,6 +11,7 @@ import {
     Legend,
     ResponsiveContainer
 } from 'recharts';
+import { useState, useEffect } from 'react';
 
 interface DualAxisTrendChartProps {
     data: {
@@ -21,7 +22,14 @@ interface DualAxisTrendChartProps {
 }
 
 export function DualAxisTrendChart({ data }: DualAxisTrendChartProps) {
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     if (!data || data.length === 0) return <div className="p-10 text-center text-gray-400">Loading chart data...</div>;
+    if (!isMounted) return <div className="p-10 text-center text-gray-400">Loading chart...</div>;
 
     return (
         <ResponsiveContainer width="100%" height="100%">

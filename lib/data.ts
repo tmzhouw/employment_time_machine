@@ -294,6 +294,56 @@ export async function getIndustryDistribution(filters?: { industry?: string, tow
         .sort((a, b) => b.value - a.value);
 }
 
+export async function getCompanyHistory(companyName: string) {
+    // 1. Find company ID first
+    const { data: companies } = await supabase
+        .from('companies')
+        .select('id, name, industry, town, contact_person, contact_phone')
+        .eq('name', companyName)
+        .limit(1);
+
+    if (!companies || companies.length === 0) return null;
+    const company = companies[0];
+
+    // 2. Fetch all reports for this company
+    const { data: reports } = await supabase
+        .from('monthly_reports')
+        .select('*')
+        .eq('company_id', company.id)
+        .order('report_month', { ascending: true });
+
+    if (!reports) return { info: company, history: [] };
+
+    // 3. Format history
+    const history = reports.map((r: any) => ({
+        month: r.report_month,
+        employees: r.employees_total || 0,
+        recruited: r.recruited_new || 0,
+        resigned: r.resigned_total || 0,
+        shortage: r.shortage_total || 0,
+        net_growth: r.net_growth || 0
+    }));
+
+    // 4. Calculate Summary Stats
+    const totalRecruited = history.reduce((sum: number, r: any) => sum + r.recruited, 0);
+    const totalResigned = history.reduce((sum: number, r: any) => sum + r.resigned, 0);
+    const netGrowth = totalRecruited - totalResigned;
+    const maxShortage = Math.max(...history.map((r: any) => r.shortage));
+    const avgShortage = Math.round(history.reduce((sum: number, r: any) => sum + r.shortage, 0) / (history.length || 1));
+
+    return {
+        info: company,
+        history,
+        stats: {
+            totalRecruited,
+            totalResigned,
+            netGrowth,
+            maxShortage,
+            avgShortage
+        }
+    };
+}
+
 export async function getRegionalDistribution(filters?: { industry?: string, town?: string }) {
     const allData = await fetchAllRawData();
     const filteredData = applyFilters(allData, filters);

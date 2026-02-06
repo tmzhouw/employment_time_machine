@@ -4,8 +4,10 @@ import { Search, Building2, Users, AlertCircle, Filter, PieChart, Info, Download
 import {
     getReportSummary,
     getFilterOptions,
-    getEnterpriseList
+    getEnterpriseList,
+    getCompanyHistory
 } from '@/lib/data';
+import { EnterpriseDetailModal } from '@/components/TimeMachine/EnterpriseDetailModal';
 import { NavBar } from '@/components/TimeMachine/NavBar';
 import clsx from 'clsx';
 import { redirect } from 'next/navigation';
@@ -33,9 +35,13 @@ export default async function AnalysisPage(props: PageProps) {
     const filterOptions = await getFilterOptions();
 
     // Load Data
-    const [summary, enterpriseList] = await Promise.all([
+    // Load Data
+    const companyParam = typeof searchParams.company === 'string' ? searchParams.company : null;
+
+    const [summary, enterpriseList, companyHistory] = await Promise.all([
         getReportSummary(filters),
-        getEnterpriseList(page, pageSize, filters)
+        getEnterpriseList(page, pageSize, filters),
+        companyParam ? getCompanyHistory(companyParam) : Promise.resolve(null)
     ]);
 
     if (!summary) return (
@@ -168,7 +174,15 @@ export default async function AnalysisPage(props: PageProps) {
                                     const isRisk = shortageRate > 0.15;
                                     return (
                                         <tr key={row.id} className="hover:bg-blue-50/50 transition-colors">
-                                            <td className="px-6 py-4 font-medium text-gray-900">{row.name}</td>
+                                            <td className="px-6 py-4 font-medium text-gray-900">
+                                                <Link
+                                                    href={`?${new URLSearchParams({ ...searchParams, company: row.name } as any).toString()}`}
+                                                    scroll={false}
+                                                    className="hover:text-blue-600 hover:underline cursor-pointer"
+                                                >
+                                                    {row.name}
+                                                </Link>
+                                            </td>
                                             <td className="px-6 py-4 text-gray-600">{row.industry}</td>
                                             <td className="px-6 py-4 text-gray-600">{row.town}</td>
                                             <td className="px-6 py-4 text-right font-mono text-indigo-600 font-bold">{row.employees}</td>
@@ -199,6 +213,9 @@ export default async function AnalysisPage(props: PageProps) {
                 </div>
 
             </main>
+
+            {/* Enterprise Detail Modal */}
+            <EnterpriseDetailModal data={companyHistory} />
         </div>
     );
 }

@@ -39,3 +39,33 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ====================================
+# Production Deployment (SECURITY)
+# ====================================
+
+# Backup files (NEVER COMMIT!)
+backups/
+*.sql
+*.sql.gz
+*.dump
+
+# Logs
+logs/
+*.log
+nginx/logs/
+
+# SSL Certificates (NEVER COMMIT!)
+nginx/ssl/*.pem
+nginx/ssl/*.key
+*.crt
+*.key
+
+# Docker overrides
+docker-compose.override.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

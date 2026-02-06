@@ -6,24 +6,32 @@ import {
     getTopRecruitingCompanies,
     getRegionalDistribution,
     getTopTurnoverCompanies,
-    getTopGrowthCompanies
+    getTopGrowthCompanies,
+    getCompanyHistory
 } from '@/lib/data';
 import { ChartSection } from '@/components/TimeMachine/ChartSection';
 import { BarChartSection } from '@/components/TimeMachine/BarChartSection';
 import { DualAxisTrendChart } from '@/components/TimeMachine/DualAxisTrendChart';
 import { MetricCard } from '@/components/TimeMachine/MetricCard';
 import { NavBar } from '@/components/TimeMachine/NavBar';
+import { EnterpriseDetailModal } from '@/components/TimeMachine/EnterpriseDetailModal';
 import clsx from 'clsx';
 import { TrendingUp, Users, AlertCircle, Award, Briefcase, MapPin, AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
 
 // Ensure data is fresh
 export const dynamic = 'force-dynamic';
 
-export default async function DashboardPage() {
-    const filters = {};
-    const ANNUAL_GOAL = 50000; // Simulated Annual Recruitment Goal
+interface PageProps {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
 
-    const [trends, industryDist, summary, topShortage, topRecruiting, regionalDist, topTurnover, topGrowth] = await Promise.all([
+export default async function DashboardPage(props: PageProps) {
+    const searchParams = await props.searchParams;
+    const filters = {};
+    const companyParam = typeof searchParams.company === 'string' ? searchParams.company : null;
+
+    const [trends, industryDist, summary, topShortage, topRecruiting, regionalDist, topTurnover, topGrowth, companyHistory] = await Promise.all([
         getTrendData(filters),
         getIndustryDistribution(filters),
         getReportSummary(filters),
@@ -31,7 +39,8 @@ export default async function DashboardPage() {
         getTopRecruitingCompanies(5, filters),
         getRegionalDistribution(filters),
         getTopTurnoverCompanies(5, filters),
-        getTopGrowthCompanies(5, filters)
+        getTopGrowthCompanies(5, filters),
+        companyParam ? getCompanyHistory(companyParam) : Promise.resolve(null)
     ]);
 
     if (!summary) return (
@@ -202,9 +211,14 @@ export default async function DashboardPage() {
                                                 {idx + 1}
                                             </span>
                                             <div>
-                                                <div className="text-sm font-medium text-gray-900 line-clamp-1 w-24 md:w-32" title={item.name}>
+                                                <Link
+                                                    href={`?company=${encodeURIComponent(item.name)}`}
+                                                    scroll={false}
+                                                    className="text-sm font-medium text-gray-900 line-clamp-1 w-24 md:w-32 hover:text-orange-600 hover:underline cursor-pointer"
+                                                    title={item.name}
+                                                >
                                                     {item.name}
-                                                </div>
+                                                </Link>
                                                 <div className="text-xs text-gray-500">{item.industry}</div>
                                             </div>
                                         </div>
@@ -231,9 +245,14 @@ export default async function DashboardPage() {
                                                 {idx + 1}
                                             </span>
                                             <div>
-                                                <div className="text-sm font-medium text-gray-900 line-clamp-1 w-24 md:w-32" title={item.name}>
+                                                <Link
+                                                    href={`?company=${encodeURIComponent(item.name)}`}
+                                                    scroll={false}
+                                                    className="text-sm font-medium text-gray-900 line-clamp-1 w-24 md:w-32 hover:text-cyan-600 hover:underline cursor-pointer"
+                                                    title={item.name}
+                                                >
                                                     {item.name}
-                                                </div>
+                                                </Link>
                                                 <div className="text-xs text-gray-500">{item.industry}</div>
                                             </div>
                                         </div>
@@ -248,8 +267,11 @@ export default async function DashboardPage() {
                     </div>
                 </section>
 
+                {/* Enterprise Detail Modal */}
+                <EnterpriseDetailModal data={companyHistory} />
+
             </main>
-        </div>
+        </div >
     );
 }
 
@@ -281,7 +303,13 @@ function ListItem({ idx, name, sub, value, unit, colorClass, bgClass }: any) {
                     {idx + 1}
                 </div>
                 <div className="min-w-0">
-                    <div className="text-sm font-bold text-gray-800 truncate pr-2">{name}</div>
+                    <Link
+                        href={`?company=${encodeURIComponent(name)}`}
+                        scroll={false}
+                        className="text-sm font-bold text-gray-800 truncate pr-2 hover:text-blue-600 hover:underline cursor-pointer block"
+                    >
+                        {name}
+                    </Link>
                     <div className="text-xs text-gray-400 truncate">{sub}</div>
                 </div>
             </div>

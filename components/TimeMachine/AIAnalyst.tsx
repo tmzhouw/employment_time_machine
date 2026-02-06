@@ -9,7 +9,7 @@ export function AIAnalyst({ contextData }: { contextData: any }) {
     const { messages, append, isLoading, setMessages } = useChat({
         api: '/api/chat',
         initialMessages: []
-    });
+    } as any) as any;
 
     const [hasStarted, setHasStarted] = useState(false);
 
