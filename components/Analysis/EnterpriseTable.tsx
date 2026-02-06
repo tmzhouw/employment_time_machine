@@ -91,39 +91,33 @@ export default function EnterpriseTable({ companies }: EnterpriseTableProps) {
     const handleBatchExport = () => {
         const selected = companies.filter(c => selectedCompanies.has(c.name));
 
-        // 1. Define Headers with updated field names
+        // 1. Define Headers with user-requested order
         const headers = [
             '企业名称',
             '行业类型',
             '所在乡镇',
             '在岗人数',
-            '本月缺工',
             '本月新招',
-            '本月流失',
             '累计新招',
+            '本月流失',
             '累计流失',
-            '缺工峰值',
-            '流失率'
+            '本月缺工',
+            '缺工峰值'
         ];
 
         // 2. Format Data Rows
         const csvRows = selected.map(c => {
-            const turnoverRate = c.employees > 0
-                ? `${c.turnoverRate.toFixed(1)}%`
-                : '0.0%';
-
             return [
                 `"${c.name}"`, // Quote strings to handle commas
                 c.industry,
                 c.town,
                 c.employees,
-                c.monthlyShortage || c.shortage || 0,
                 c.monthlyRecruited || c.recruited || 0,
-                c.monthlyResigned || c.resigned || 0,
                 c.cumulativeRecruited || 0,
+                c.monthlyResigned || c.resigned || 0,
                 c.cumulativeResigned || 0,
-                c.peakShortage || 0,
-                turnoverRate
+                c.monthlyShortage || c.shortage || 0,
+                c.peakShortage || 0
             ].join(',');
         });
 
