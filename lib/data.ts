@@ -374,8 +374,27 @@ export async function getFilterOptions() {
     const allData = await fetchAllRawData(); // This is cached per request usually in Next.js deduping if we fetch again, but here it's function call. 
     // For performance, we might want to optimize. But for 3500 rows it's negligible.
 
+    // Custom sort order
+    const priorityOrder = [
+        '纺织服装',
+        '电子信息',
+        '新能源新材料',
+        '农副产品深加工',
+        '生物医药化工', '生物医药（化工）', // Handle variations
+        '装备制造', '装备制造产业', // Handle variations
+        '商贸物流',
+        '其他'
+    ];
+
+    const getPriority = (name: string) => {
+        const index = priorityOrder.findIndex(p => name === p || name.includes(p));
+        return index !== -1 ? index : 999;
+    };
+
     // Unique Industries
-    const industries = Array.from(new Set(allData.filter(d => d.companies?.industry).map(d => d.companies.industry))).sort();
+    const industries = Array.from(new Set(allData.filter(d => d.companies?.industry).map(d => d.companies.industry)))
+        .sort((a, b) => getPriority(a) - getPriority(b));
+
     // Unique Towns
     const towns = Array.from(new Set(allData.filter(d => d.companies?.town).map(d => d.companies.town))).sort();
 
