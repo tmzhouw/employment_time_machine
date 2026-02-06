@@ -83,9 +83,40 @@ export default function EnterpriseTable({ companies }: EnterpriseTableProps) {
 
     const handleBatchExport = () => {
         const selected = companies.filter(c => selectedCompanies.has(c.name));
-        console.log('Exporting:', selected);
-        // TODO: Implement export functionality
-        alert(`导出 ${selected.length} 家企业数据`);
+
+        // 1. Define Headers
+        const headers = ['企业名称', '行业类型', '所在乡镇', '在岗人数', '缺工人数', '新招人数', '流失人数', '流失率'];
+
+        // 2. Format Data Rows
+        const csvRows = selected.map(c => {
+            const turnoverRate = c.employees > 0
+                ? `${((c.shortage / c.employees) * 100).toFixed(1)}%`
+                : '0.0%';
+
+            return [
+                `"${c.name}"`, // Quote strings to handle commas
+                c.industry,
+                c.town,
+                c.employees,
+                c.shortage,
+                c.recruited,
+                c.resigned,
+                turnoverRate
+            ].join(',');
+        });
+
+        // 3. Combine with BOM for Excel Chinese compatibility
+        const csvContent = '\ufeff' + [headers.join(','), ...csvRows].join('\n');
+
+        // 4. Create Blob and Trigger Download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `企业数据导出_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const SortButton = ({ column, label }: { column: SortKey; label: string }) => (
@@ -200,8 +231,8 @@ export default function EnterpriseTable({ companies }: EnterpriseTableProps) {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
                                             <span className={`text-sm font-medium ${company.shortage > 50 ? 'text-red-600' :
-                                                    company.shortage > 20 ? 'text-orange-600' :
-                                                        'text-green-600'
+                                                company.shortage > 20 ? 'text-orange-600' :
+                                                    'text-green-600'
                                                 }`}>
                                                 {company.shortage}
                                             </span>
@@ -212,8 +243,8 @@ export default function EnterpriseTable({ companies }: EnterpriseTableProps) {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`text-sm font-medium ${company.turnoverRate > 15 ? 'text-red-600' :
-                                                company.turnoverRate > 10 ? 'text-orange-600' :
-                                                    'text-green-600'
+                                            company.turnoverRate > 10 ? 'text-orange-600' :
+                                                'text-green-600'
                                             }`}>
                                             {company.turnoverRate.toFixed(1)}%
                                         </span>
