@@ -16,9 +16,13 @@ interface AdvancedFilters {
 
 interface EnterpriseLibraryClientProps {
     initialCompanies: any[];
+    filterOptions: {
+        industries: any[];
+        towns: any[];
+    };
 }
 
-export default function EnterpriseLibraryClient({ initialCompanies }: EnterpriseLibraryClientProps) {
+export default function EnterpriseLibraryClient({ initialCompanies, filterOptions }: EnterpriseLibraryClientProps) {
     const searchParams = useSearchParams();
     const [filteredCompanies, setFilteredCompanies] = useState(initialCompanies);
     const [filters, setFilters] = useState<AdvancedFilters>({
@@ -92,7 +96,11 @@ export default function EnterpriseLibraryClient({ initialCompanies }: Enterprise
             </div>
 
             {/* Advanced Filter */}
-            <AdvancedFilter onFilterChange={handleFilterChange} />
+            <AdvancedFilter
+                onFilterChange={handleFilterChange}
+                industryOptions={filterOptions.industries}
+                townOptions={filterOptions.towns}
+            />
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

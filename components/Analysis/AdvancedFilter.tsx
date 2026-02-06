@@ -13,14 +13,14 @@ interface AdvancedFilters {
 
 interface AdvancedFilterProps {
     onFilterChange: (filters: AdvancedFilters) => void;
+    industryOptions: string[];
+    townOptions: string[];
 }
 
-const industries = ['全部', '电子制造', '纺织服装', '机械制造', '化工', '食品加工', '其他'];
-const towns = ['全部', '天门工业园', '多宝镇', '竟陵街道', '岳口镇', '渔薪镇', '拖市镇', '张港镇', '其他'];
 const scales = ['全部', '< 100人', '100-500人', '> 500人'];
 const shortages = ['全部', '轻度 (<5%)', '中度 (5-15%)', '严重 (>15%)'];
 
-export default function AdvancedFilter({ onFilterChange }: AdvancedFilterProps) {
+export default function AdvancedFilter({ onFilterChange, industryOptions, townOptions }: AdvancedFilterProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [filters, setFilters] = useState<AdvancedFilters>({
         industry: '全部',
@@ -29,6 +29,10 @@ export default function AdvancedFilter({ onFilterChange }: AdvancedFilterProps) 
         shortage: '全部',
         search: ''
     });
+
+    // Helper: Add '全部' to options
+    const industryList = ['全部', ...industryOptions];
+    const townList = ['全部', ...townOptions];
 
     const updateFilter = (key: keyof AdvancedFilters, value: string) => {
         const newFilters = { ...filters, [key]: value };
@@ -118,7 +122,7 @@ export default function AdvancedFilter({ onFilterChange }: AdvancedFilterProps) 
                                 onChange={(e) => updateFilter('industry', e.target.value)}
                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-white"
                             >
-                                {industries.map((industry) => (
+                                {industryList.map((industry) => (
                                     <option key={industry} value={industry}>
                                         {industry}
                                     </option>
@@ -136,7 +140,7 @@ export default function AdvancedFilter({ onFilterChange }: AdvancedFilterProps) 
                                 onChange={(e) => updateFilter('town', e.target.value)}
                                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-white"
                             >
-                                {towns.map((town) => (
+                                {townList.map((town) => (
                                     <option key={town} value={town}>
                                         {town}
                                     </option>

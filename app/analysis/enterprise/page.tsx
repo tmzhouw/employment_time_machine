@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { getLatestCompaniesWithTrends, getCompanyHistory } from '@/lib/data';
+import { getLatestCompaniesWithTrends, getCompanyHistory, getFilterOptions } from '@/lib/data';
 import EnterpriseLibraryClient from '@/components/Analysis/EnterpriseLibraryClient';
 import { EnterpriseDetailModal } from '@/components/TimeMachine/EnterpriseDetailModal';
 
@@ -10,6 +10,7 @@ interface Props {
 export default async function EnterpriseLibraryPage({ searchParams }: Props) {
     // Fetch data on server
     const companies = await getLatestCompaniesWithTrends();
+    const filterOptions = await getFilterOptions();
 
     const params = await searchParams;
     const selectedCompanyName = params?.company as string;
@@ -29,7 +30,10 @@ export default async function EnterpriseLibraryPage({ searchParams }: Props) {
                     </div>
                 </div>
             }>
-                <EnterpriseLibraryClient initialCompanies={companies} />
+                <EnterpriseLibraryClient
+                    initialCompanies={companies}
+                    filterOptions={filterOptions}
+                />
             </Suspense>
 
             {selectedCompanyData && (
