@@ -530,3 +530,181 @@ export async function getLatestCompaniesWithTrends() {
         };
     });
 }
+// ============================================================================
+// MULTI-YEAR TREND ANALYSIS FUNCTIONS (Phase 2)
+// ============================================================================
+
+interface MultiYearTrendPoint {
+    month: string; // YYYY-MM format
+    monthLabel: string; // Display format: 2025年1月
+    employees: number;
+    shortage: number;
+    recruited: number;
+    resigned: number;
+}
+
+interface YearMetrics {
+    avgEmployees: number;
+    totalRecruited: number;
+    totalResigned: number;
+    avgShortage: number;
+    growthRate: number | null; // % growth from previous year
+}
+
+interface YearOverYearData {
+    [year: string]: YearMetrics;
+}
+
+/**
+ * Get aggregated monthly trend data across all years
+ * Returns chronologically sorted data points with year-aware labels
+ */
+export async function getMultiYearTrendData(
+    filters?: { industry?: string; town?: string }
+): Promise<MultiYearTrendPoint[]> {
+    const allData = await fetchAllRawData();
+    const filteredData = applyFilters(allData, filters);
+
+    // Group by YYYY-MM
+    const monthlyAggregates = new Map<string, MultiYearTrendPoint>();
+
+    filteredData.forEach((row: any) => {
+        const date = new Date(row.report_month);
+        const yearMonth = row.report_month.substring(0, 7); // YYYY-MM
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const monthLabel = `${year}年${month}月`;
+
+        if (!monthlyAggregates.has(yearMonth)) {
+            monthlyAggregates.set(yearMonth, {
+                month: yearMonth,
+                monthLabel: monthLabel,
+                employees: 0,
+                shortage: 0,
+                recruited: 0,
+                resigned: 0
+            });
+        }
+
+        const aggregate = monthlyAggregates.get(yearMonth)!;
+        aggregate.employees += row.employees_total || 0;
+        aggregate.shortage += row.shortage_total || 0;
+        aggregate.recruited += row.recruited_new || 0;
+        aggregate.resigned += row.resigned_total || 0;
+    });
+
+    // Sort chronologically and return
+    return Array.from(monthlyAggregates.values()).sort((a, b) => a.month.localeCompare(b.month));
+}
+
+/**
+ * Get year-over-year comparison metrics
+ * Calculates annual aggregates and growth rates
+ */
+export async function getYearOverYearComparison(
+    filters?: { industry?: string; town?: string }
+): Promise<YearOverYearData> {
+    const allData = await fetchAllRawData();
+    const filteredData = applyFilters(allData, filters);
+
+    // Group by year
+    const yearlyData = new Map<string, {
+        employeeSamples: number[];
+        shortageSamples: number[];
+        recruited: number;
+        resigned: number;
+    }>();
+
+    filteredData.forEach((row: any) => {
+        const year = row.report_month.substring(0, 4);
+
+        if (!yearlyData.has(year)) {
+            yearlyData.set(year, {
+                employeeSamples: [],
+                shortageSamples: [],
+                recruited: 0,
+                resigned: 0
+            });
+        }
+
+        const yearData = yearlyData.get(year)!;
+        yearData.employeeSamples.push(row.employees_total || 0);
+        yearData.shortageSamples.push(row.shortage_total || 0);
+        yearData.recruited += row.recruited_new || 0;
+        yearData.resigned += row.resigned_total || 0;
+    });
+
+    // Calculate metrics for each year
+    const result: YearOverYearData = {};
+    const years = Array.from(yearlyData.keys()).sort();
+
+    years.forEach((year, index) => {
+        const data = yearlyData.get(year)!;
+
+        // Average employees and shortage across all monthly samples
+        const avgEmployees = data.employeeSamples.reduce((sum, val) => sum + val, 0) / data.employeeSamples.length;
+        const avgShortage = data.shortageSamples.reduce((sum, val) => sum + val, 0) / data.shortageSamples.length;
+
+        // Calculate growth rate compared to previous year
+        let growthRate: number | null = null;
+        if (index > 0) {
+            const prevYear = years[index - 1];
+            const prevAvgEmployees = result[prevYear].avgEmployees;
+            if (prevAvgEmployees > 0) {
+                growthRate = ((avgEmployees - prevAvgEmployees) / prevAvgEmployees) * 100;
+            }
+        }
+
+        result[year] = {
+            avgEmployees: Math.round(avgEmployees),
+            totalRecruited: data.recruited,
+            totalResigned: data.resigned,
+            avgShortage: Math.round(avgShortage),
+            growthRate: growthRate !== null ? Math.round(growthRate * 10) / 10 : null
+        };
+    });
+
+    return result;
+}
+
+/**
+ * Get quarterly breakdown for trend insights
+ */
+export async function getQuarterlyBreakdown(
+    filters?: { industry?: string; town?: string }
+): Promise<Array<{ year: string; quarter: string; employees: number; recruited: number; resigned: number }>> {
+    const allData = await fetchAllRawData();
+    const filteredData = applyFilters(allData, filters);
+
+    const quarterlyData = new Map<string, { employees: number[]; recruited: number; resigned: number }>();
+
+    filteredData.forEach((row: any) => {
+        const date = new Date(row.report_month);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const quarter = Math.ceil(month / 3);
+        const key = `${year}-Q${quarter}`;
+
+        if (!quarterlyData.has(key)) {
+            quarterlyData.set(key, { employees: [], recruited: 0, resigned: 0 });
+        }
+
+        const qData = quarterlyData.get(key)!;
+        qData.employees.push(row.employees_total || 0);
+        qData.recruited += row.recruited_new || 0;
+        qData.resigned += row.resigned_total || 0;
+    });
+
+    return Array.from(quarterlyData.entries())
+        .map(([key, data]) => {
+            const [year, quarter] = key.split('-');
+            return {
+                year,
+                quarter,
+                employees: Math.round(data.employees.reduce((sum, val) => sum + val, 0) / data.employees.length),
+                recruited: data.recruited,
+                resigned: data.resigned
+            };
+        })
+        .sort((a, b) => `${a.year}-${a.quarter}`.localeCompare(`${b.year}-${b.quarter}`));
+}
