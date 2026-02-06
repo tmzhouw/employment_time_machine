@@ -44,7 +44,13 @@ export default function EnterpriseLibraryClient({ initialCompanies, filterOption
         }
 
         if (filters.town !== '全部') {
-            result = result.filter(c => c.town === filters.town);
+            if (filters.town === '其他') {
+                // "Other" includes explicitly "Other" AND any town not in the main list
+                const majorTowns = filterOptions.towns.filter(t => t !== '其他');
+                result = result.filter(c => c.town === '其他' || !majorTowns.includes(c.town));
+            } else {
+                result = result.filter(c => c.town === filters.town);
+            }
         }
 
         if (filters.scale !== '全部') {
