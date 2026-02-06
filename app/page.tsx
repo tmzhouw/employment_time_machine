@@ -12,6 +12,7 @@ import {
 import { ChartSection } from '@/components/TimeMachine/ChartSection';
 import { BarChartSection } from '@/components/TimeMachine/BarChartSection';
 import { DualAxisTrendChart } from '@/components/TimeMachine/DualAxisTrendChart';
+import { MetricCard } from '@/components/TimeMachine/MetricCard';
 import { NavBar } from '@/components/TimeMachine/NavBar';
 import clsx from 'clsx';
 
@@ -44,121 +45,86 @@ export default async function DashboardPage() {
   const isShortageRisk = shortageRateVal > 10;
   const isShortageWarning = shortageRateVal > 5;
 
+  // Calculate Growth Rate
+  // Growth Rate = Net Growth / (Current - Net Growth)
+  // (Current - Net Growth) approximates the "Start of Year" number
+  const startOfYear = (summary.avg_employment || 0) - (summary.net_growth || 0);
+  const growthRate = startOfYear > 0
+    ? ((summary.net_growth / startOfYear) * 100).toFixed(2) + '%'
+    : 'N/A';
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans pb-20">
       <NavBar />
 
-      {/* Hero / Disclaimer Section */}
-      <div className="max-w-7xl mx-auto px-6 pt-6 pb-2">
-        <div className="bg-blue-900/5 border-l-4 border-blue-900 p-4 rounded-r shadow-sm flex items-start sm:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-blue-900 font-bold flex items-center gap-2">
-              <Activity size={18} />
-              <span>全市就业局长驾驶舱 (Leader Cockpit)</span>
-            </h3>
-            <p className="text-sm text-blue-700 mt-1">
-              实时监测全市企业用工健康度、年度目标进度及重点风险预警。
-            </p>
-          </div>
-          <div className="text-xs text-gray-400 hidden sm:block">
-            数据更新时间: {new Date().toLocaleDateString()}
-          </div>
-        </div>
-      </div>
 
       <main className="max-w-7xl mx-auto p-6 space-y-8">
 
-        {/* 1. Core KPIs (The "Bureau Chief" View) */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-          {/* KPI 1: Annual Goal Progress (Political Achievement) */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-5">
-              <Target size={100} />
+        {/* 1. Leader Cockpit Metrics */}
+        <section>
+          <MainSectionHeader number="一" title="全市用工概览 (2025全年)" />
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <p className="text-slate-500 text-sm mt-1">数据来源：全市重点企业直报数据 (已校准)</p>
             </div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="bg-green-100 p-2 rounded-lg text-green-700"><Target size={20} /></div>
-              <h3 className="font-bold text-gray-700">年度新增就业目标</h3>
-            </div>
-
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-4xl font-bold font-serif text-gray-900">{summary.net_growth.toLocaleString()}</span>
-              <span className="text-sm text-gray-500">/ {ANNUAL_GOAL.toLocaleString()} 人</span>
-            </div>
-
-            <div className="mt-4">
-              <div className="flex justify-between text-xs font-semibold mb-1">
-                <span className="text-green-700">当前进度: {progressPercent}%</span>
-                <span className="text-gray-400">时间进度: {((new Date().getMonth() + 1) / 12 * 100).toFixed(0)}%</span>
-              </div>
-              <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                <div
-                  className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-1000"
-                  style={{ width: `${progressPercent}%` }}
-                ></div>
-              </div>
+            <div className="text-right">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                数据已更新至 12月
+              </span>
             </div>
           </div>
 
-          {/* KPI 2: Shortage Risk (Risk Management) */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-5">
-              <AlertCircle size={100} />
-            </div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className={clsx("p-2 rounded-lg text-white", isShortageRisk ? "bg-red-500" : (isShortageWarning ? "bg-amber-500" : "bg-blue-500"))}>
-                <Activity size={20} />
-              </div>
-              <h3 className="font-bold text-gray-700">全市缺工风险监测</h3>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard
+              title="调查企业数"
+              value={summary.total_enterprises}
+              unit="家"
+              subLabel="覆盖重点工业企业"
+            />
+            <MetricCard
+              title="在岗员工总数"
+              value={summary.avg_employment.toLocaleString()}
+              unit="人"
+              subLabel="12月底实有"
+            />
+            <MetricCard
+              title="企业缺工率"
+              value={summary.shortage_rate}
+              subLabel="当前紧缺程度"
+              trend="down" // Assuming low is good
+            />
+            <MetricCard
+              title="员工增长率"
+              value={growthRate}
+              subLabel="较年初"
+              trend={parseFloat(growthRate) > 0 ? 'up' : 'down'}
+              subValue={parseFloat(growthRate) > 0 ? '增长' : '下降'}
+            />
 
-            <div className="flex items-center gap-6 mt-2">
-              <div>
-                <div className="text-4xl font-bold font-serif text-gray-900">{summary.shortage_rate}</div>
-                <div className="text-xs text-gray-500 mt-1">综合缺工率</div>
-              </div>
-              <div className="flex-1">
-                <div className={clsx("text-lg font-bold mb-1", isShortageRisk ? "text-red-600" : (isShortageWarning ? "text-amber-600" : "text-blue-600"))}>
-                  {isShortageRisk ? "高风险预警" : (isShortageWarning ? "中度关注" : "运行平稳")}
-                </div>
-                <div className="text-xs text-gray-400">
-                  当前缺工 {summary.current_total_shortage.toLocaleString()} 人
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 text-xs text-gray-400 bg-gray-50 p-2 rounded">
-              建议关注: {topShortage[0]?.name.substring(0, 6)}... 等 {topShortage.length} 家重点缺工企业
-            </div>
-          </div>
-
-          {/* KPI 3: Stability & Coverage (Foundation) */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-5">
-              <ShieldCheck size={100} />
-            </div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="bg-indigo-100 p-2 rounded-lg text-indigo-700"><ShieldCheck size={20} /></div>
-              <h3 className="font-bold text-gray-700">就业稳定与覆盖</h3>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              <div>
-                <div className="text-2xl font-bold font-serif text-gray-900">{summary.total_enterprises}</div>
-                <div className="text-xs text-gray-500">监测企业(家)</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold font-serif text-indigo-600">96.5%</div>
-                <div className="text-xs text-gray-500">人员稳岗率</div>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
-              <div className="text-xs text-gray-500">
-                在岗总人数
-              </div>
-              <div className="font-bold text-gray-900">{summary.avg_employment.toLocaleString()} <span className="text-xs font-normal text-gray-400">人</span></div>
-            </div>
+            <MetricCard
+              title="全年新招人数"
+              value={summary.cumulative_recruited.toLocaleString()}
+              unit="人"
+              className="bg-blue-50/50 border-blue-100"
+            />
+            <MetricCard
+              title="全年流失人数"
+              value={summary.cumulative_resigned.toLocaleString()}
+              unit="人"
+              className="bg-orange-50/50 border-orange-100"
+            />
+            <MetricCard
+              title="全年净增长"
+              value={(summary.net_growth > 0 ? '+' : '') + summary.net_growth.toLocaleString()}
+              unit="人"
+              trend={summary.net_growth > 0 ? 'up' : 'down'}
+              className="bg-emerald-50/50 border-emerald-100"
+            />
+            <MetricCard
+              title="年流动率"
+              value={summary.turnover_rate}
+              subLabel="累计流失 / 现员"
+            />
           </div>
         </section>
 

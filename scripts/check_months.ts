@@ -1,37 +1,44 @@
-import 'dotenv/config';
-import { supabaseAdmin as supabase } from '../lib/supabase-admin';
+
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: '.env.local' });
+
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 async function checkMonths() {
-    console.log('--- Checking Imported Months ---');
+    let from = 0;
+    const pageSize = 1000;
+    let hasMore = true;
+    const counts = new Map<string, number>();
 
-    const { data, error } = await supabase
-        .from('monthly_reports')
-        .select('report_month')
-        .order('report_month', { ascending: true })
-        .range(0, 10000);
+    while (hasMore) {
+        const { data, error } = await supabase
+            .from('monthly_reports')
+            .select('report_month')
+            .range(from, from + pageSize - 1);
 
-    if (error) {
-        console.error('Error fetching data:', error);
-        process.exit(1);
+        if (error) { console.error(error); break; }
+
+        if (data && data.length > 0) {
+            data.forEach(r => {
+                counts.set(r.report_month, (counts.get(r.report_month) || 0) + 1);
+            });
+            from += pageSize;
+            if (data.length < pageSize) hasMore = false;
+        } else {
+            hasMore = false;
+        }
     }
 
-    // Get distinct months
-    const monthCounts = new Map<string, number>();
-    data.forEach(row => {
-        const m = row.report_month;
-        monthCounts.set(m, (monthCounts.get(m) || 0) + 1);
+    console.log('--- Records per Month ---');
+    let totalRecords = 0;
+    Array.from(counts.entries()).sort().forEach(([month, count]) => {
+        console.log(`${month}: ${count}`);
+        totalRecords += count;
     });
-
-    const sortedMonths = Array.from(monthCounts.keys()).sort();
-
-    console.log(`Found ${sortedMonths.length} distinct months:`);
-    sortedMonths.forEach(m => console.log(`- ${m}: ${monthCounts.get(m)} rows`));
-
-    if (sortedMonths.length === 12) {
-        console.log('✅ All 12 months are present.');
-    } else {
-        console.log(`⚠️ Count is ${sortedMonths.length}, expected 12.`);
-    }
+    console.log(`Total Records: ${totalRecords}`);
 }
 
 checkMonths();

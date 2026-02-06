@@ -163,12 +163,23 @@ export async function getReportSummary(filters?: { industry?: string, town?: str
         ? ((current_total_shortage / (current_total_employees + current_total_shortage)) * 100).toFixed(1) + '%'
         : '0%';
 
+    // Calculate Net Growth based on: Latest Month Total - Earliest Month Total
+    // First, verify we have time span
+    const sortedDates = [...new Set(filteredData.map(d => d.report_month))].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    const startDate = sortedDates[0];
+    const startData = filteredData.filter(d => d.report_month === startDate);
+    const start_total_employees = startData.reduce((acc, curr) => acc + (curr.employees_total || 0), 0);
+
+    const net_growth_diff = current_total_employees - start_total_employees;
+
     return {
         total_enterprises,
         avg_employment: current_total_employees,
+        start_employment: start_total_employees,
         cumulative_recruited,
         cumulative_resigned,
-        net_growth,
+        net_growth: net_growth_diff, // Use the new difference logic
+        net_growth_recruits_minus_resigned: net_growth, // Keep old one just in case
         turnover_rate,
         shortage_rate,
         current_total_shortage
