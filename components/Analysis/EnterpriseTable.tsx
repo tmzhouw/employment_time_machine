@@ -13,6 +13,13 @@ interface Company {
     recruited: number;
     resigned: number;
     turnoverRate: number;
+    // New cumulative/monthly fields
+    monthlyShortage?: number;
+    monthlyRecruited?: number;
+    monthlyResigned?: number;
+    cumulativeRecruited?: number;
+    cumulativeResigned?: number;
+    peakShortage?: number;
 }
 
 interface EnterpriseTableProps {
