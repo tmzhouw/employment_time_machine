@@ -101,7 +101,7 @@ export default function AdvancedFilter({ onFilterChange }: AdvancedFilterProps) 
                                 value={filters.search}
                                 onChange={(e) => updateFilter('search', e.target.value)}
                                 placeholder="输入企业名称..."
-                                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-white placeholder-slate-400"
                             />
                         </div>
                     </div>
@@ -116,7 +116,7 @@ export default function AdvancedFilter({ onFilterChange }: AdvancedFilterProps) 
                             <select
                                 value={filters.industry}
                                 onChange={(e) => updateFilter('industry', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-white"
                             >
                                 {industries.map((industry) => (
                                     <option key={industry} value={industry}>
@@ -134,7 +134,7 @@ export default function AdvancedFilter({ onFilterChange }: AdvancedFilterProps) 
                             <select
                                 value={filters.town}
                                 onChange={(e) => updateFilter('town', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-white"
                             >
                                 {towns.map((town) => (
                                     <option key={town} value={town}>
@@ -152,7 +152,7 @@ export default function AdvancedFilter({ onFilterChange }: AdvancedFilterProps) 
                             <select
                                 value={filters.scale}
                                 onChange={(e) => updateFilter('scale', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-white"
                             >
                                 {scales.map((scale) => (
                                     <option key={scale} value={scale}>
@@ -170,7 +170,7 @@ export default function AdvancedFilter({ onFilterChange }: AdvancedFilterProps) 
                             <select
                                 value={filters.shortage}
                                 onChange={(e) => updateFilter('shortage', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-white"
                             >
                                 {shortages.map((shortage) => (
                                     <option key={shortage} value={shortage}>

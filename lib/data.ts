@@ -425,3 +425,35 @@ export async function getEnterpriseList(page = 1, pageSize = 20, filters?: { ind
 
     return { data: paginatedData, total };
 }
+
+export async function getLatestCompaniesWithTrends() {
+    const allData = await fetchAllRawData();
+
+    // Group by company to get latest record
+    const companyMap = new Map();
+    // Sort by date ascending to process latest last
+    allData.sort((a: any, b: any) => new Date(a.report_month).getTime() - new Date(b.report_month).getTime());
+
+    allData.forEach((row: any) => {
+        if (!row.companies?.name) return;
+        companyMap.set(row.companies.name, row);
+    });
+
+    return Array.from(companyMap.values()).map((row: any) => {
+        const employees = row.employees_total || 0;
+        const resigned = row.resigned_total || 0;
+        // Simple turnover rate calculation: for a single month snapshot
+        const turnoverRate = employees > 0 ? (resigned / employees) * 100 : 0;
+
+        return {
+            name: row.companies?.name,
+            industry: row.companies?.industry,
+            town: row.companies?.town,
+            employees: employees,
+            shortage: row.shortage_total || 0,
+            recruited: row.recruited_new || 0,
+            resigned: resigned,
+            turnoverRate: turnoverRate
+        };
+    });
+}

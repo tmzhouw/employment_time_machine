@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AdvancedFilter from '@/components/Analysis/AdvancedFilter';
 import EnterpriseTable from '@/components/Analysis/EnterpriseTable';
-import EnterpriseDetailModal from '@/components/TimeMachine/EnterpriseDetailModal';
 import { Building2, Users, AlertCircle, TrendingDown } from 'lucide-react';
 
 interface AdvancedFilters {
@@ -160,11 +159,6 @@ export default function EnterpriseLibraryClient({ initialCompanies }: Enterprise
 
             {/* Enterprise Table */}
             <EnterpriseTable companies={filteredCompanies} />
-
-            {/* Enterprise Detail Modal */}
-            {selectedCompany && (
-                <EnterpriseDetailModal companyName={selectedCompany} />
-            )}
         </div>
     );
 }
