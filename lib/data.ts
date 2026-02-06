@@ -479,30 +479,53 @@ export async function getEnterpriseList(page = 1, pageSize = 20, filters?: { ind
 export async function getLatestCompaniesWithTrends() {
     const allData = await fetchAllRawData();
 
-    // Group by company to get latest record
-    const companyMap = new Map();
-    // Sort by date ascending to process latest last
-    allData.sort((a: any, b: any) => new Date(a.report_month).getTime() - new Date(b.report_month).getTime());
+    // Group all records by company name to calculate cumulative stats
+    const companyRecordsMap = new Map<string, any[]>();
 
     allData.forEach((row: any) => {
         if (!row.companies?.name) return;
-        companyMap.set(row.companies.name, row);
+        const name = row.companies.name;
+        if (!companyRecordsMap.has(name)) {
+            companyRecordsMap.set(name, []);
+        }
+        companyRecordsMap.get(name)!.push(row);
     });
 
-    return Array.from(companyMap.values()).map((row: any) => {
-        const employees = row.employees_total || 0;
-        const resigned = row.resigned_total || 0;
-        // Simple turnover rate calculation: for a single month snapshot
-        const turnoverRate = employees > 0 ? (resigned / employees) * 100 : 0;
+    return Array.from(companyRecordsMap.entries()).map(([name, records]) => {
+        // Sort records by date to get latest
+        records.sort((a, b) => new Date(a.report_month).getTime() - new Date(b.report_month).getTime());
+        const latestRecord = records[records.length - 1];
+
+        // Calculate cumulative values across all months
+        const cumulativeRecruited = records.reduce((sum, r) => sum + (r.recruited_new || 0), 0);
+        const cumulativeResigned = records.reduce((sum, r) => sum + (r.resigned_total || 0), 0);
+        const peakShortage = Math.max(...records.map(r => r.shortage_total || 0));
+
+        // Latest month values
+        const employees = latestRecord.employees_total || 0;
+        const monthlyRecruited = latestRecord.recruited_new || 0;
+        const monthlyResigned = latestRecord.resigned_total || 0;
+        const monthlyShortage = latestRecord.shortage_total || 0;
+
+        const turnoverRate = employees > 0 ? (monthlyResigned / employees) * 100 : 0;
 
         return {
-            name: row.companies?.name,
-            industry: row.companies?.industry,
-            town: row.companies?.town,
+            name: latestRecord.companies?.name,
+            industry: latestRecord.companies?.industry,
+            town: latestRecord.companies?.town,
             employees: employees,
-            shortage: row.shortage_total || 0,
-            recruited: row.recruited_new || 0,
-            resigned: resigned,
+            // Monthly values
+            monthlyShortage: monthlyShortage,
+            monthlyRecruited: monthlyRecruited,
+            monthlyResigned: monthlyResigned,
+            // Cumulative/Peak values
+            cumulativeRecruited: cumulativeRecruited,
+            cumulativeResigned: cumulativeResigned,
+            peakShortage: peakShortage,
+            // Keep legacy fields for backward compatibility
+            shortage: monthlyShortage,
+            recruited: monthlyRecruited,
+            resigned: monthlyResigned,
             turnoverRate: turnoverRate
         };
     });
