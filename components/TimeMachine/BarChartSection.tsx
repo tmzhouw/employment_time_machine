@@ -5,7 +5,24 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 
-export function BarChartSection({ data }: { data: any[] }) {
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-white p-3 border border-gray-100 shadow-lg rounded-lg text-sm">
+                <p className="font-bold text-gray-800 mb-1">{label}</p>
+                <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: payload[0].color }}></span>
+                    <span className="font-medium" style={{ color: payload[0].color }}>
+                        {payload[0].value}
+                    </span>
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
+export function BarChartSection({ data, color = "#3b82f6" }: { data: any[], color?: string }) {
     if (!data || data.length === 0) return <div className="p-10 text-center text-gray-400">Loading chart data...</div>;
 
     return (
@@ -21,11 +38,8 @@ export function BarChartSection({ data }: { data: any[] }) {
                     width={100}
                     tick={{ fontSize: 12, fill: '#4b5563' }}
                 />
-                <Tooltip
-                    cursor={{ fill: '#f3f4f6' }}
-                    contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
-                <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
+                <Tooltip cursor={{ fill: '#f3f4f6' }} content={<CustomTooltip />} />
+                <Bar dataKey="value" fill={color} radius={[0, 4, 4, 0]} barSize={20} />
             </BarChart>
         </ResponsiveContainer>
     );

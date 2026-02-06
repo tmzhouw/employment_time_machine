@@ -97,8 +97,8 @@ export async function getTopShortageCompanies(limit = 10, filters?: { industry?:
         .sort((a: any, b: any) => b.shortage_total - a.shortage_total)
         .slice(0, limit)
         .map((row: any) => ({
-            name: row.companies?.name || 'Unknown',
-            industry: row.companies?.industry || 'Other',
+            name: (Array.isArray(row.companies) ? row.companies[0]?.name : row.companies?.name) || 'Unknown',
+            industry: (Array.isArray(row.companies) ? row.companies[0]?.industry : row.companies?.industry) || 'Other',
             shortage: row.shortage_total,
             rate: row.employees_total > 0
                 ? ((row.shortage_total / (row.employees_total + row.shortage_total)) * 100).toFixed(1) + '%'
@@ -112,16 +112,96 @@ export async function getTopRecruitingCompanies(limit = 10, filters?: { industry
 
     const totals = new Map();
     filteredData.forEach((row: any) => {
-        const name = row.companies?.name;
+        const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+        const name = comp?.name;
         if (!name) return;
 
-        const cur = totals.get(name) || { name, industry: row.companies?.industry, value: 0 };
+        const cur = totals.get(name) || { name, industry: comp?.industry, value: 0 };
         cur.value += (row.recruited_new || 0);
         totals.set(name, cur);
     });
 
     return Array.from(totals.values())
         .sort((a, b) => b.value - a.value)
+        .slice(0, limit);
+}
+
+export async function getTopTurnoverCompanies(limit = 10, filters?: { industry?: string, town?: string }) {
+    const allData = await fetchAllRawData();
+    const filteredData = applyFilters(allData, filters);
+
+    const totals = new Map();
+    filteredData.forEach((row: any) => {
+        const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+        const name = comp?.name;
+        if (!name) return;
+
+        const cur = totals.get(name) || { name, industry: comp?.industry, value: 0, recruited: 0 };
+        cur.value += (row.resigned_total || 0);
+        cur.recruited += (row.recruited_new || 0);
+        totals.set(name, cur);
+    });
+
+    return Array.from(totals.values())
+        .sort((a: any, b: any) => b.value - a.value)
+        .slice(0, limit);
+}
+
+export async function getTopGrowthCompanies(limit = 10, filters?: { industry?: string, town?: string }) {
+    const allData = await fetchAllRawData();
+    const filteredData = applyFilters(allData, filters);
+
+    // To calculate net growth RATE, we need:
+    // 1. Net Growth (Dec - Jan)
+    // 2. Start Employment (Jan, or calculated)
+
+    // Group by company
+    const companyMap = new Map();
+
+    filteredData.forEach((row: any) => {
+        const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+        const name = comp?.name;
+        if (!name) return;
+
+        if (!companyMap.has(name)) {
+            companyMap.set(name, { records: [] });
+        }
+        companyMap.get(name).records.push(row);
+    });
+
+    const growthStats: any[] = [];
+
+    companyMap.forEach((val, name) => {
+        const records = val.records;
+        // Sort by date
+        records.sort((a: any, b: any) => new Date(a.report_month).getTime() - new Date(b.report_month).getTime());
+
+        if (records.length === 0) return;
+
+        const startRecord = records[0];
+        const endRecord = records[records.length - 1];
+
+        const startEmp = startRecord.employees_total || 0;
+        const endEmp = endRecord.employees_total || 0;
+        const comp = Array.isArray(startRecord.companies) ? startRecord.companies[0] : startRecord.companies;
+        const industry = comp?.industry;
+
+        const netGrowth = endEmp - startEmp;
+
+        if (startEmp > 0) {
+            const growthRate = (netGrowth / startEmp) * 100;
+            growthStats.push({
+                name,
+                industry,
+                value: netGrowth,
+                rate: growthRate,
+                rateLabel: growthRate.toFixed(1) + '%'
+            });
+        }
+    });
+
+    return growthStats
+        .sort((a, b) => b.rate - a.rate)
         .slice(0, limit);
 }
 
@@ -203,9 +283,10 @@ export async function getIndustryDistribution(filters?: { industry?: string, tow
     const industryStats = new Map();
 
     currentData.forEach((row: any) => {
-        const industry = row.companies?.industry || '其他';
+        const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+        const industry = comp?.industry || '其他';
         const current = industryStats.get(industry) || 0;
-        industryStats.set(industry, current + row.employees_total);
+        industryStats.set(industry, current + (row.employees_total || 0));
     });
 
     return Array.from(industryStats.entries())
@@ -227,7 +308,8 @@ export async function getRegionalDistribution(filters?: { industry?: string, tow
     const townTotals = new Map<string, number>();
 
     currentData.forEach((row: any) => {
-        const town = row.companies?.town || '未知';
+        const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+        const town = comp?.town || '未知';
         const currentVal = townTotals.get(town) || 0;
         townTotals.set(town, currentVal + (row.employees_total || 0));
     });
