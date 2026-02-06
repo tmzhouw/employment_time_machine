@@ -395,8 +395,39 @@ export async function getFilterOptions() {
     const industries = Array.from(new Set(allData.filter(d => d.companies?.industry).map(d => d.companies.industry)))
         .sort((a, b) => getPriority(a) - getPriority(b));
 
-    // Unique Towns
-    const towns = Array.from(new Set(allData.filter(d => d.companies?.town).map(d => d.companies.town))).sort();
+    // Unique Towns with Employee Count & Sorting
+    // 1. Get latest data for each company to avoid double counting
+    const companyMap = new Map();
+    allData.sort((a, b) => new Date(a.report_month).getTime() - new Date(b.report_month).getTime());
+    allData.forEach(row => {
+        if (!row.companies?.name) return;
+        companyMap.set(row.companies.name, row);
+    });
+    const latestData = Array.from(companyMap.values());
+
+    // 2. Aggregate employees by town
+    const townStats = new Map<string, number>();
+    latestData.forEach((row: any) => {
+        const town = row.companies?.town;
+        const employees = row.employees_total || 0;
+        if (town) {
+            townStats.set(town, (townStats.get(town) || 0) + employees);
+        }
+    });
+
+    // 3. Filter and Sort
+    const sortedTowns = Array.from(townStats.entries())
+        .filter(([town, count]) => count >= 50 && town !== '其他') // Filter out small towns and 'Other' for sorting
+        .sort((a, b) => b[1] - a[1]) // Sort by employee count descending
+        .map(([town]) => town);
+
+    // 4. Add '其他' at the end (includes small towns implicitly in 'Other' option for UI purposes, though technically mapped to 'Other' string if needed in future)
+    // Note: The requirement is "Below 50 merge into Other". 
+    // For the filter dropdown options, we present the valid major towns. "Other" will be selectable.
+    // Ideally we should ensure '其他' is present if there are small towns.
+    const hasSmallTowns = Array.from(townStats.entries()).some(([town, count]) => count < 50) || townStats.has('其他');
+
+    const towns = hasSmallTowns ? [...sortedTowns, '其他'] : sortedTowns;
 
     return { industries, towns };
 }
