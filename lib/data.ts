@@ -238,3 +238,47 @@ export async function getFilterOptions() {
 
     return { industries, towns };
 }
+
+export async function getEnterpriseList(page = 1, pageSize = 20, filters?: { industry?: string, town?: string, companyName?: string }) {
+    const allData = await fetchAllRawData();
+    const filteredData = applyFilters(allData, filters);
+
+    // Latest month only logic for the list "snapshot"
+    if (filteredData.length === 0) return { data: [], total: 0 };
+
+    // Group by company to get the latest record for each company
+    // (Assuming the raw data might have multiple months for same company, we want the "current status" which is the latest month)
+    const companyMap = new Map();
+
+    // Sort by date ascending first, so we process latest last
+    filteredData.sort((a, b) => new Date(a.report_month).getTime() - new Date(b.report_month).getTime());
+
+    filteredData.forEach(row => {
+        if (!row.companies?.name) return;
+        // This will strictly overwrite with the latest month's data
+        companyMap.set(row.companies.name, row);
+    });
+
+    const latestCompanyRecords = Array.from(companyMap.values());
+    const total = latestCompanyRecords.length;
+
+    // Pagination
+    const start = (page - 1) * pageSize;
+    const paginatedData = latestCompanyRecords
+        .sort((a, b) => (b.employees_total || 0) - (a.employees_total || 0)) // Default sort by size
+        .slice(start, start + pageSize)
+        .map(row => ({
+            id: row.company_id,
+            name: row.companies?.name,
+            industry: row.companies?.industry,
+            town: row.companies?.town,
+            employees: row.employees_total || 0,
+            shortage: row.shortage_total || 0,
+            new_recruits: row.recruited_new || 0, // Note: this is "new recruits in the latest month". 
+            // If we want "Cumulative Recruits" we'd need to sum up all months for this company.
+            // For now, let's keep it simple as "Latest Month Status".
+            report_month: row.report_month
+        }));
+
+    return { data: paginatedData, total };
+}
