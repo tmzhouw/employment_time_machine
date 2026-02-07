@@ -1,5 +1,5 @@
 # 基础镜像
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # 依赖安装阶段
 FROM base AS deps
