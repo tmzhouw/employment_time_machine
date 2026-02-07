@@ -1,5 +1,6 @@
 import 'server-only'; // Ensure this runs only on server
 import { supabaseAdmin as supabase } from './supabase-admin';
+import { getPgPool } from './db';
 import { cache } from 'react';
 
 // Reusable filter helper
@@ -13,8 +14,31 @@ function applyFilters(data: any[], filters?: { industry?: string, town?: string,
     });
 }
 
-// Core data fetcher (uncached)
-async function _fetchAllRawDataFromDB() {
+// ===== Dual-mode data fetching =====
+// Production (DATABASE_URL set): direct PostgreSQL via pg
+// Development (no DATABASE_URL): Supabase SDK
+
+async function _fetchViaPostgres(): Promise<any[]> {
+    const pool = getPgPool();
+    if (!pool) throw new Error('PG pool not available');
+
+    const result = await pool.query(`
+        SELECT
+            mr.*,
+            json_build_object(
+                'name', c.name,
+                'industry', c.industry,
+                'town', c.town
+            ) as companies
+        FROM monthly_reports mr
+        JOIN companies c ON mr.company_id = c.id
+        ORDER BY mr.id ASC
+    `);
+    console.log(`[PG] Fetched ${result.rows.length} records from PostgreSQL`);
+    return result.rows;
+}
+
+async function _fetchViaSupabase(): Promise<any[]> {
     const PAGE_SIZE = 1000;
     let allData: any[] = [];
     let page = 0;
@@ -46,19 +70,26 @@ async function _fetchAllRawDataFromDB() {
             hasMore = false;
         }
     }
-    console.log(`[DB] Fetched ${allData.length} records from monthly_reports`);
+    console.log(`[Supabase] Fetched ${allData.length} records`);
     return allData;
 }
 
-// Layer 1: In-memory cache with 5-minute TTL (Plan 1)
-// unstable_cache has a 2MB limit, our data is ~5MB, so we use module-level memory cache
+// Core fetcher: auto-selects based on environment
+async function _fetchAllRawDataFromDB(): Promise<any[]> {
+    if (process.env.DATABASE_URL) {
+        return _fetchViaPostgres();
+    }
+    return _fetchViaSupabase();
+}
+
+// In-memory cache with 5-minute TTL
 let _memoryCache: { data: any[] | null; timestamp: number } = { data: null, timestamp: 0 };
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in ms
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 async function _cachedFetch(): Promise<any[]> {
     const now = Date.now();
     if (_memoryCache.data && (now - _memoryCache.timestamp) < CACHE_TTL) {
-        console.log(`[Cache HIT] Returning ${_memoryCache.data.length} cached records (age: ${Math.round((now - _memoryCache.timestamp) / 1000)}s)`);
+        console.log(`[Cache HIT] ${_memoryCache.data.length} records (age: ${Math.round((now - _memoryCache.timestamp) / 1000)}s)`);
         return _memoryCache.data;
     }
     console.log('[Cache MISS] Fetching from database...');
@@ -67,8 +98,7 @@ async function _cachedFetch(): Promise<any[]> {
     return data;
 }
 
-// Layer 2: Per-request deduplication (Plan 4)
-// Within a single server render, multiple calls to fetchAllRawData() return the same Promise
+// Per-request deduplication
 const fetchAllRawData = cache(_cachedFetch);
 
 export async function getTrendData(filters?: { industry?: string, town?: string }) {

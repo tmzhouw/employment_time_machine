@@ -8,7 +8,7 @@ WORKDIR /app
 
 # 复制依赖文件
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+RUN npm ci
 
 # 构建阶段
 FROM base AS builder
@@ -17,7 +17,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # 禁用遥测
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # 构建应用
 RUN npm run build
