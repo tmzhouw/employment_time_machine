@@ -1317,10 +1317,15 @@ async function _fetchCompanyHistoryViaPostgres(companyName: string): Promise<Com
 }
 
 export async function getCompanyHistory(companyName: string): Promise<CompanyHistoryResponse> {
+    console.log(`[getCompanyHistory] Called for: "${companyName}"`);
+
     // Try PostgreSQL first if configured
     if (process.env.DATABASE_URL) {
+        console.log('[getCompanyHistory] Using PostgreSQL connection');
         try {
-            return await _fetchCompanyHistoryViaPostgres(companyName);
+            const result = await _fetchCompanyHistoryViaPostgres(companyName);
+            console.log(`[getCompanyHistory] PG Result - Info: ${!!result.info}, History: ${result.history.length}`);
+            return result;
         } catch (error) {
             console.error('[getCompanyHistory] PG Error:', error);
             // Fallback to Supabase? Usually if DATABASE_URL is set we don't want fallback unless strictly configured.
@@ -1328,6 +1333,8 @@ export async function getCompanyHistory(companyName: string): Promise<CompanyHis
             // For now, let's stick to the pattern: if URL set, use PG.
             return { info: null, history: [] };
         }
+    } else {
+        console.warn('[getCompanyHistory] DATABASE_URL not set, falling back to Supabase');
     }
 
     // Fallback to Supabase SDK matching original logic
