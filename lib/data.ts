@@ -1,7 +1,6 @@
 import 'server-only'; // Ensure this runs only on server
 import { supabaseAdmin as supabase } from './supabase-admin';
 import { cache } from 'react';
-import { unstable_cache } from 'next/cache';
 
 // Reusable filter helper
 function applyFilters(data: any[], filters?: { industry?: string, town?: string, companyName?: string }) {
@@ -51,13 +50,22 @@ async function _fetchAllRawDataFromDB() {
     return allData;
 }
 
-// Layer 1: Cross-request cache with 5-minute TTL (Plan 1)
-// This caches the DB result in Next.js Data Cache, revalidating every 300 seconds
-const _cachedFetch = unstable_cache(
-    _fetchAllRawDataFromDB,
-    ['all-raw-data'],
-    { revalidate: 300 } // 5 minutes
-);
+// Layer 1: In-memory cache with 5-minute TTL (Plan 1)
+// unstable_cache has a 2MB limit, our data is ~5MB, so we use module-level memory cache
+let _memoryCache: { data: any[] | null; timestamp: number } = { data: null, timestamp: 0 };
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in ms
+
+async function _cachedFetch(): Promise<any[]> {
+    const now = Date.now();
+    if (_memoryCache.data && (now - _memoryCache.timestamp) < CACHE_TTL) {
+        console.log(`[Cache HIT] Returning ${_memoryCache.data.length} cached records (age: ${Math.round((now - _memoryCache.timestamp) / 1000)}s)`);
+        return _memoryCache.data;
+    }
+    console.log('[Cache MISS] Fetching from database...');
+    const data = await _fetchAllRawDataFromDB();
+    _memoryCache = { data, timestamp: now };
+    return data;
+}
 
 // Layer 2: Per-request deduplication (Plan 4)
 // Within a single server render, multiple calls to fetchAllRawData() return the same Promise
