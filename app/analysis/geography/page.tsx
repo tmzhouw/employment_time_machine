@@ -38,7 +38,7 @@ export default async function GeographyAnalysisPage() {
             </div>
 
             {/* 1. Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <SummaryCard
                     title="全区域在岗总数"
                     value={totalEmployees.toLocaleString()}

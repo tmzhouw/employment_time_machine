@@ -58,10 +58,10 @@ export default async function DashboardPage(props: PageProps) {
         : 'N/A';
 
     return (
-        <div className="min-h-screen bg-gray-50 text-gray-900 font-sans pb-20">
+        <div className="min-h-screen bg-gray-50 text-gray-900 font-sans pb-20 overflow-x-hidden">
             <NavBar />
 
-            <main className="max-w-7xl mx-auto p-6 space-y-8">
+            <main className="max-w-7xl mx-auto px-4 py-6 md:p-6 space-y-6 md:space-y-8">
 
                 {/* 1. Leader Cockpit Metrics */}
                 <section>
