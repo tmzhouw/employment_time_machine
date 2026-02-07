@@ -1,5 +1,7 @@
 import 'server-only'; // Ensure this runs only on server
 import { supabaseAdmin as supabase } from './supabase-admin';
+import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 
 // Reusable filter helper
 function applyFilters(data: any[], filters?: { industry?: string, town?: string, companyName?: string }) {
@@ -12,10 +14,8 @@ function applyFilters(data: any[], filters?: { industry?: string, town?: string,
     });
 }
 
-// Helper to fetch all raw data first (since we filter in memory)
-// In a real large DB, we would filter in SQL. But Supabase JS join filtering is tricky with dynamic optional params and pagination.
-// Given 3500 rows, fetching all then filtering is reasonably fast and very flexible.
-async function fetchAllRawData() {
+// Core data fetcher (uncached)
+async function _fetchAllRawDataFromDB() {
     const PAGE_SIZE = 1000;
     let allData: any[] = [];
     let page = 0;
@@ -47,8 +47,21 @@ async function fetchAllRawData() {
             hasMore = false;
         }
     }
+    console.log(`[DB] Fetched ${allData.length} records from monthly_reports`);
     return allData;
 }
+
+// Layer 1: Cross-request cache with 5-minute TTL (Plan 1)
+// This caches the DB result in Next.js Data Cache, revalidating every 300 seconds
+const _cachedFetch = unstable_cache(
+    _fetchAllRawDataFromDB,
+    ['all-raw-data'],
+    { revalidate: 300 } // 5 minutes
+);
+
+// Layer 2: Per-request deduplication (Plan 4)
+// Within a single server render, multiple calls to fetchAllRawData() return the same Promise
+const fetchAllRawData = cache(_cachedFetch);
 
 export async function getTrendData(filters?: { industry?: string, town?: string }) {
     const allData = await fetchAllRawData();
