@@ -57,10 +57,18 @@ export async function getTrendData(filters?: { industry?: string, town?: string 
     // Sort logic needs date objects
     filteredData.sort((a, b) => new Date(a.report_month).getTime() - new Date(b.report_month).getTime());
 
+    // Filter for current/latest year to avoid summing across years
+    const currentYear = new Date().getFullYear().toString();
+    const allSortedDates = [...new Set(filteredData.map(d => d.report_month))].sort();
+    const latestAvailableDate = allSortedDates[allSortedDates.length - 1];
+    const targetYear = latestAvailableDate?.startsWith(currentYear) ? currentYear : (latestAvailableDate?.substring(0, 4) || currentYear);
+
+    const yearData = filteredData.filter(d => d.report_month.startsWith(targetYear));
+
     // Aggregate by month
     const monthlyTotals = new Map();
 
-    filteredData.forEach(row => {
+    yearData.forEach(row => {
         const date = new Date(row.report_month);
         const monthKey = `${date.getMonth() + 1}月`;
 
@@ -111,8 +119,15 @@ export async function getTopRecruitingCompanies(limit = 10, filters?: { industry
     const allData = await fetchAllRawData();
     const filteredData = applyFilters(allData, filters);
 
+    // Filter for current/latest year to avoid summing across years
+    const currentYear = new Date().getFullYear().toString();
+    const allSortedDates = [...new Set(filteredData.map(d => d.report_month))].sort();
+    const latestAvailableDate = allSortedDates[allSortedDates.length - 1];
+    const targetYear = latestAvailableDate?.startsWith(currentYear) ? currentYear : (latestAvailableDate?.substring(0, 4) || currentYear);
+    const yearData = filteredData.filter(d => d.report_month.startsWith(targetYear));
+
     const totals = new Map();
-    filteredData.forEach((row: any) => {
+    yearData.forEach((row: any) => {
         const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
         const name = comp?.name;
         if (!name) return;
@@ -132,7 +147,14 @@ export async function getTopTurnoverCompanies(limit = 10, filters?: { industry?:
     const filteredData = applyFilters(allData, filters);
 
     const totals = new Map();
-    filteredData.forEach((row: any) => {
+    // Filter for current/latest year to avoid summing across years
+    const currentYear = new Date().getFullYear().toString();
+    const allSortedDates = [...new Set(filteredData.map(d => d.report_month))].sort();
+    const latestAvailableDate = allSortedDates[allSortedDates.length - 1];
+    const targetYear = latestAvailableDate?.startsWith(currentYear) ? currentYear : (latestAvailableDate?.substring(0, 4) || currentYear);
+    const yearData = filteredData.filter(d => d.report_month.startsWith(targetYear));
+
+    yearData.forEach((row: any) => {
         const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
         const name = comp?.name;
         if (!name) return;
@@ -156,10 +178,17 @@ export async function getTopGrowthCompanies(limit = 10, filters?: { industry?: s
     // 1. Net Growth (Dec - Jan)
     // 2. Start Employment (Jan, or calculated)
 
+    // Filter for current/latest year to avoid summing across years
+    const currentYear = new Date().getFullYear().toString();
+    const allSortedDates = [...new Set(filteredData.map(d => d.report_month))].sort();
+    const latestAvailableDate = allSortedDates[allSortedDates.length - 1];
+    const targetYear = latestAvailableDate?.startsWith(currentYear) ? currentYear : (latestAvailableDate?.substring(0, 4) || currentYear);
+    const yearData = filteredData.filter(d => d.report_month.startsWith(targetYear));
+
     // Group by company
     const companyMap = new Map();
 
-    filteredData.forEach((row: any) => {
+    yearData.forEach((row: any) => {
         const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
         const name = comp?.name;
         if (!name) return;
@@ -216,11 +245,20 @@ export async function getReportSummary(filters?: { industry?: string, town?: str
     const uniqueCompanyIds = new Set(filteredData.map(d => d.company_id));
     const total_enterprises = uniqueCompanyIds.size;
 
+    // Filter for current year (2025) for cumulative stats
+    const currentYear = new Date().getFullYear().toString();
+    // If no data for current year, fallback to latest available year
+    const allSortedDates = [...new Set(filteredData.map(d => d.report_month))].sort();
+    const latestAvailableDate = allSortedDates[allSortedDates.length - 1];
+    const targetYear = latestAvailableDate?.startsWith(currentYear) ? currentYear : (latestAvailableDate?.substring(0, 4) || currentYear);
+
+    const yearData = filteredData.filter(d => d.report_month.startsWith(targetYear));
+
     let cumulative_recruited = 0;
     let cumulative_resigned = 0;
     let net_growth = 0;
 
-    filteredData.forEach(r => {
+    yearData.forEach(r => {
         cumulative_recruited += r.recruited_new || 0;
         cumulative_resigned += r.resigned_total || 0;
         net_growth += ((r.recruited_new || 0) - (r.resigned_total || 0));
@@ -244,13 +282,15 @@ export async function getReportSummary(filters?: { industry?: string, town?: str
         ? ((current_total_shortage / (current_total_employees + current_total_shortage)) * 100).toFixed(1) + '%'
         : '0%';
 
-    // Calculate Net Growth based on: Latest Month Total - Earliest Month Total
+    // Calculate Net Growth based on: Latest Month Total - Earliest Month Total of TARGET YEAR
     // First, verify we have time span
-    const sortedDates = [...new Set(filteredData.map(d => d.report_month))].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-    const startDate = sortedDates[0];
-    const startData = filteredData.filter(d => d.report_month === startDate);
+    const yearSortedDates = [...new Set(yearData.map(d => d.report_month))].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    const startDate = yearSortedDates[0];
+    const startData = yearData.filter(d => d.report_month === startDate);
     const start_total_employees = startData.reduce((acc, curr) => acc + (curr.employees_total || 0), 0);
 
+    // If we have data for the year, use End - Start. If not, use the cumulative net growth we calculated.
+    // Actually, usually End - Start is better if available.
     const net_growth_diff = current_total_employees - start_total_employees;
 
     return {
@@ -546,6 +586,92 @@ export async function getMultiYearTrendData(
 
     // Sort chronologically and return
     return Array.from(monthlyAggregates.values()).sort((a, b) => a.month.localeCompare(b.month));
+}
+
+// ============================================================================
+// GEOGRAPHY ANALYSIS FUNCTIONS (Phase 3)
+// ============================================================================
+
+export interface TownStat {
+    name: string;
+    totalEmployees: number;
+    shortageCount: number;
+    shortageRate: number;
+    topIndustry: string;
+    turnoverRate: number;
+    companyCount: number;
+}
+
+export async function getTownStats(filters?: { industry?: string }): Promise<TownStat[]> {
+    const allData = await fetchAllRawData();
+    // Filter by industry if provided (ignoring town filter as we want to see all towns)
+    const filteredData = applyFilters(allData, filters);
+
+    if (filteredData.length === 0) return [];
+
+    // Latest month snapshot
+    filteredData.sort((a, b) => new Date(b.report_month).getTime() - new Date(a.report_month).getTime());
+    const latestMonth = filteredData[0].report_month;
+    const currentData = filteredData.filter(d => d.report_month === latestMonth);
+
+    // Group by Town
+    const townGroups = new Map<string, {
+        employees: number;
+        shortage: number;
+        recruited: number;
+        resigned: number;
+        companies: any[];
+    }>();
+
+    currentData.forEach((row: any) => {
+        const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+        const town = comp?.town || '未知';
+
+        if (!townGroups.has(town)) {
+            townGroups.set(town, { employees: 0, shortage: 0, recruited: 0, resigned: 0, companies: [] });
+        }
+
+        const group = townGroups.get(town)!;
+        group.employees += (row.employees_total || 0);
+        group.shortage += (row.shortage_total || 0);
+        group.recruited += (row.recruited_new || 0);
+        group.resigned += (row.resigned_total || 0);
+        group.companies.push(row);
+    });
+
+    const stats: TownStat[] = [];
+
+    townGroups.forEach((group, town) => {
+        if (town === '未知' || town === '其他') return; // Optionally filter out unknowns
+
+        // Find Top Industry
+        const indCounts = new Map<string, number>();
+        group.companies.forEach(row => {
+            const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+            const ind = comp?.industry || '其他';
+            indCounts.set(ind, (indCounts.get(ind) || 0) + (row.employees_total || 0));
+        });
+
+        const topIndustry = Array.from(indCounts.entries())
+            .sort((a, b) => b[1] - a[1])[0]?.[0] || '综合';
+
+        const turnoverRate = group.employees > 0 ? (group.resigned / group.employees) * 100 : 0;
+        const shortageRate = (group.employees + group.shortage) > 0
+            ? (group.shortage / (group.employees + group.shortage)) * 100
+            : 0;
+
+        stats.push({
+            name: town,
+            totalEmployees: group.employees,
+            shortageCount: group.shortage,
+            shortageRate: parseFloat(shortageRate.toFixed(1)),
+            topIndustry: topIndustry,
+            turnoverRate: parseFloat(turnoverRate.toFixed(1)),
+            companyCount: group.companies.length
+        });
+    });
+
+    return stats.sort((a, b) => b.totalEmployees - a.totalEmployees);
 }
 
 // Output interface for company history
