@@ -101,12 +101,49 @@ export function IndustryDetailModal({ industryName, onClose }: IndustryDetailMod
                                 color="text-blue-600"
                             />
                             <KpiCard
+                                label="全年流失（人）"
+                                value={data.totalResigned.toLocaleString()}
+                                color="text-slate-500"
+                            />
+                            <KpiCard
                                 label="净增长（人）"
                                 value={`${data.netGrowth > 0 ? '+' : ''}${data.netGrowth.toLocaleString()}`}
                                 color={data.netGrowth >= 0 ? 'text-emerald-600' : 'text-red-600'}
                             />
                         </div>
 
+                        {/* Talent Demand Structure */}
+                        {data.talentStructure && (data.talentStructure.general + data.talentStructure.tech + data.talentStructure.mgmt > 0) && (
+                            <div className="mb-8 bg-slate-50 rounded-xl p-5 border border-slate-100">
+                                <h3 className="text-sm font-bold text-slate-500 uppercase mb-4 flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4" />
+                                    人才需求结构
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <StructureBar
+                                        label="普工/操作工"
+                                        value={data.talentStructure.general}
+                                        total={data.talentStructure.general + data.talentStructure.tech + data.talentStructure.mgmt}
+                                        color="bg-blue-500"
+                                        textColor="text-blue-600"
+                                    />
+                                    <StructureBar
+                                        label="技能人才"
+                                        value={data.talentStructure.tech}
+                                        total={data.talentStructure.general + data.talentStructure.tech + data.talentStructure.mgmt}
+                                        color="bg-pink-500"
+                                        textColor="text-pink-600"
+                                    />
+                                    <StructureBar
+                                        label="管理/销售"
+                                        value={data.talentStructure.mgmt}
+                                        total={data.talentStructure.general + data.talentStructure.tech + data.talentStructure.mgmt}
+                                        color="bg-purple-500"
+                                        textColor="text-purple-600"
+                                    />
+                                </div>
+                            </div>
+                        )}
                         {/* Monthly Trend Chart */}
                         <div className="mb-8">
                             <h3 className="text-base font-bold text-slate-900 mb-4">
@@ -192,10 +229,10 @@ export function IndustryDetailModal({ industryName, onClose }: IndustryDetailMod
                             </div>
                         </div>
 
-                        {/* Top 5 Companies */}
+                        {/* Top 5 Companies — Shortage Breakdown */}
                         <div className="mb-8">
                             <h3 className="text-base font-bold text-slate-900 mb-4">
-                                {data.name}产业重点企业用工情况（Top 5）
+                                {data.name}产业重点企业缺工明细（Top 5）
                             </h3>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
@@ -203,38 +240,43 @@ export function IndustryDetailModal({ industryName, onClose }: IndustryDetailMod
                                         <tr className="bg-indigo-600 text-white">
                                             <th className="text-left py-3 px-4 font-semibold rounded-tl-lg">企业名称</th>
                                             <th className="text-right py-3 px-4 font-semibold">月均用工</th>
-                                            <th className="text-right py-3 px-4 font-semibold">全年新招</th>
-                                            <th className="text-right py-3 px-4 font-semibold">全年流失</th>
-                                            <th className="text-right py-3 px-4 font-semibold rounded-tr-lg">当前急缺</th>
+                                            <th className="text-right py-3 px-4 font-semibold">缺工总数</th>
+                                            <th className="text-right py-3 px-4 font-semibold">普工</th>
+                                            <th className="text-right py-3 px-4 font-semibold">技工</th>
+                                            <th className="text-right py-3 px-4 font-semibold rounded-tr-lg">管理/销售</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {data.topCompanies.map((comp, idx) => (
-                                            <tr
-                                                key={comp.name}
-                                                className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-slate-50/50' : ''} hover:bg-indigo-50/50 transition-colors`}
-                                            >
-                                                <td className="py-3 px-4 font-medium text-slate-900">
-                                                    <button
-                                                        onClick={() => {
-                                                            onClose();
-                                                            router.push(`?company=${encodeURIComponent(comp.name)}`);
-                                                        }}
-                                                        className="hover:text-indigo-600 hover:underline text-left"
-                                                    >
-                                                        {comp.name}
-                                                    </button>
-                                                </td>
-                                                <td className="py-3 px-4 text-right text-slate-700">{comp.avgEmployees.toLocaleString()}</td>
-                                                <td className="py-3 px-4 text-right text-emerald-600 font-medium">{comp.totalRecruited.toLocaleString()}</td>
-                                                <td className="py-3 px-4 text-right text-red-600 font-medium">{comp.totalResigned.toLocaleString()}</td>
-                                                <td className="py-3 px-4 text-right">
-                                                    <span className={`font-bold ${comp.currentShortage > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
-                                                        {comp.currentShortage}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {data.topCompanies
+                                            .slice()
+                                            .sort((a, b) => b.currentShortage - a.currentShortage)
+                                            .map((comp, idx) => (
+                                                <tr
+                                                    key={comp.name}
+                                                    className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-slate-50/50' : ''} hover:bg-indigo-50/50 transition-colors`}
+                                                >
+                                                    <td className="py-3 px-4 font-medium text-slate-900">
+                                                        <button
+                                                            onClick={() => {
+                                                                onClose();
+                                                                router.push(`?company=${encodeURIComponent(comp.name)}`);
+                                                            }}
+                                                            className="hover:text-indigo-600 hover:underline text-left"
+                                                        >
+                                                            {comp.name}
+                                                        </button>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right text-slate-700">{comp.avgEmployees.toLocaleString()}</td>
+                                                    <td className="py-3 px-4 text-right">
+                                                        <span className={`font-bold ${comp.currentShortage > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                                                            {comp.currentShortage}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right text-blue-600 font-medium">{comp.talentStructure?.general || 0}</td>
+                                                    <td className="py-3 px-4 text-right text-pink-600 font-medium">{comp.talentStructure?.tech || 0}</td>
+                                                    <td className="py-3 px-4 text-right text-purple-600 font-medium">{comp.talentStructure?.mgmt || 0}</td>
+                                                </tr>
+                                            ))}
                                     </tbody>
                                 </table>
                             </div>
@@ -270,6 +312,26 @@ function KpiCard({ label, value, color }: { label: string; value: string; color:
         <div className="bg-slate-50 rounded-xl p-4 text-center">
             <p className={`text-2xl font-bold ${color}`}>{value}</p>
             <p className="text-xs text-slate-500 mt-1">{label}</p>
+        </div>
+    );
+}
+
+function StructureBar({ label, value, total, color, textColor }: any) {
+    const percent = total > 0 ? (value / total) * 100 : 0;
+    return (
+        <div>
+            <div className="flex justify-between text-sm mb-1.5">
+                <span className="font-medium text-slate-700">{label}</span>
+                <span className={`font-bold ${textColor}`}>
+                    {value} <span className="text-xs text-slate-400 font-normal">({percent.toFixed(1)}%)</span>
+                </span>
+            </div>
+            <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                <div
+                    className={`h-full ${color} rounded-full transition-all duration-500`}
+                    style={{ width: `${percent}%` }}
+                />
+            </div>
         </div>
     );
 }

@@ -600,6 +600,11 @@ export interface TownStat {
     topIndustry: string;
     turnoverRate: number;
     companyCount: number;
+    talentStructure: {
+        general: number;
+        tech: number;
+        mgmt: number;
+    };
 }
 
 export async function getTownStats(filters?: { industry?: string }): Promise<TownStat[]> {
@@ -621,6 +626,7 @@ export async function getTownStats(filters?: { industry?: string }): Promise<Tow
         recruited: number;
         resigned: number;
         companies: any[];
+        talent: { general: number; tech: number; mgmt: number; };
     }>();
 
     currentData.forEach((row: any) => {
@@ -628,7 +634,14 @@ export async function getTownStats(filters?: { industry?: string }): Promise<Tow
         const town = comp?.town || '未知';
 
         if (!townGroups.has(town)) {
-            townGroups.set(town, { employees: 0, shortage: 0, recruited: 0, resigned: 0, companies: [] });
+            townGroups.set(town, {
+                employees: 0,
+                shortage: 0,
+                recruited: 0,
+                resigned: 0,
+                companies: [],
+                talent: { general: 0, tech: 0, mgmt: 0 }
+            });
         }
 
         const group = townGroups.get(town)!;
@@ -636,6 +649,16 @@ export async function getTownStats(filters?: { industry?: string }): Promise<Tow
         group.shortage += (row.shortage_total || 0);
         group.recruited += (row.recruited_new || 0);
         group.resigned += (row.resigned_total || 0);
+
+        // Aggregate talent structure
+        const detail = typeof row.shortage_detail === 'string'
+            ? JSON.parse(row.shortage_detail)
+            : (row.shortage_detail || {});
+
+        group.talent.general += detail.general || 0;
+        group.talent.tech += detail.tech || 0;
+        group.talent.mgmt += detail.mgmt || 0;
+
         group.companies.push(row);
     });
 
@@ -667,7 +690,8 @@ export async function getTownStats(filters?: { industry?: string }): Promise<Tow
             shortageRate: parseFloat(shortageRate.toFixed(1)),
             topIndustry: topIndustry,
             turnoverRate: parseFloat(turnoverRate.toFixed(1)),
-            companyCount: group.companies.length
+            companyCount: group.companies.length,
+            talentStructure: group.talent
         });
     });
 
@@ -684,6 +708,11 @@ export interface IndustryStat {
     turnoverRate: number;
     companyCount: number;
     avgEmployeesPerCompany: number;
+    talentStructure: {
+        general: number;
+        tech: number;
+        mgmt: number;
+    };
 }
 
 export async function getIndustryStats(filters?: { town?: string }): Promise<IndustryStat[]> {
@@ -704,6 +733,7 @@ export async function getIndustryStats(filters?: { town?: string }): Promise<Ind
         recruited: number;
         resigned: number;
         companies: any[];
+        talent: { general: number; tech: number; mgmt: number; };
     }>();
 
     currentData.forEach((row: any) => {
@@ -711,7 +741,14 @@ export async function getIndustryStats(filters?: { town?: string }): Promise<Ind
         const industry = comp?.industry || '其他';
 
         if (!industryGroups.has(industry)) {
-            industryGroups.set(industry, { employees: 0, shortage: 0, recruited: 0, resigned: 0, companies: [] });
+            industryGroups.set(industry, {
+                employees: 0,
+                shortage: 0,
+                recruited: 0,
+                resigned: 0,
+                companies: [],
+                talent: { general: 0, tech: 0, mgmt: 0 }
+            });
         }
 
         const group = industryGroups.get(industry)!;
@@ -719,6 +756,16 @@ export async function getIndustryStats(filters?: { town?: string }): Promise<Ind
         group.shortage += (row.shortage_total || 0);
         group.recruited += (row.recruited_new || 0);
         group.resigned += (row.resigned_total || 0);
+
+        // Aggregate talent structure
+        const detail = typeof row.shortage_detail === 'string'
+            ? JSON.parse(row.shortage_detail)
+            : (row.shortage_detail || {});
+
+        group.talent.general += detail.general || 0;
+        group.talent.tech += detail.tech || 0;
+        group.talent.mgmt += detail.mgmt || 0;
+
         group.companies.push(row);
     });
 
@@ -753,6 +800,7 @@ export async function getIndustryStats(filters?: { town?: string }): Promise<Ind
             turnoverRate: parseFloat(turnoverRate.toFixed(2)),
             companyCount: group.companies.length,
             avgEmployeesPerCompany: parseFloat(avgEmployees.toFixed(0)),
+            talentStructure: group.talent
         });
     });
 
@@ -775,6 +823,11 @@ export interface IndustryTopCompany {
     totalRecruited: number;
     totalResigned: number;
     currentShortage: number;
+    talentStructure: {
+        general: number;
+        tech: number;
+        mgmt: number;
+    };
 }
 
 export interface IndustryTownDistribution {
@@ -793,6 +846,11 @@ export interface IndustryDetailResponse {
     monthlyTrend: IndustryMonthlyPoint[];
     topCompanies: IndustryTopCompany[];
     townDistribution: IndustryTownDistribution[];
+    talentStructure: {
+        general: number;
+        tech: number;
+        mgmt: number;
+    };
 }
 
 export async function getIndustryDetail(industryName: string): Promise<IndustryDetailResponse> {
@@ -808,7 +866,8 @@ export async function getIndustryDetail(industryName: string): Promise<IndustryD
         return {
             name: industryName, companyCount: 0, avgMonthlyEmployees: 0,
             yearGrowthRate: 0, totalRecruited: 0, totalResigned: 0, netGrowth: 0,
-            monthlyTrend: [], topCompanies: [], townDistribution: []
+            monthlyTrend: [], topCompanies: [], townDistribution: [],
+            talentStructure: { general: 0, tech: 0, mgmt: 0 }
         };
     }
 
@@ -816,6 +875,11 @@ export async function getIndustryDetail(industryName: string): Promise<IndustryD
     const monthMap = new Map<string, { employees: number; recruited: number; resigned: number; shortage: number }>();
     const companyMonthlyData = new Map<string, { months: number; totalEmployees: number; totalRecruited: number; totalResigned: number; latestShortage: number }>();
     const townMonthlyData = new Map<string, { months: Set<string>; totalEmployees: number }>();
+
+    // To calculate talent structure, we need the latest record for each company in this industry
+    const companyLatestRecordsMap = new Map<string, any>();
+    // Sort by date ascending to ensure the map stores the latest record
+    industryData.sort((a, b) => new Date(a.report_month).getTime() - new Date(b.report_month).getTime());
 
     industryData.forEach((row: any) => {
         const month = row.report_month?.substring(0, 7) || '';
@@ -853,7 +917,23 @@ export async function getIndustryDetail(industryName: string): Promise<IndustryD
             tData.months.add(month);
             tData.totalEmployees += (row.employees_total || 0);
         }
+
+        // Store latest record for each company for talent structure calculation
+        companyLatestRecordsMap.set(compName, row);
     });
+
+    // Calculate talent structure from the latest records of companies in this industry
+    const talentStructure = { general: 0, tech: 0, mgmt: 0 };
+    Array.from(companyLatestRecordsMap.values()).forEach((row: any) => {
+        const detail = typeof row.shortage_detail === 'string'
+            ? JSON.parse(row.shortage_detail)
+            : (row.shortage_detail || {});
+
+        talentStructure.general += detail.general || 0;
+        talentStructure.tech += detail.tech || 0;
+        talentStructure.mgmt += detail.mgmt || 0;
+    });
+
 
     // Monthly trend sorted by month
     const monthlyTrend: IndustryMonthlyPoint[] = Array.from(monthMap.entries())
@@ -888,6 +968,17 @@ export async function getIndustryDetail(industryName: string): Promise<IndustryD
             totalRecruited: data.totalRecruited,
             totalResigned: data.totalResigned,
             currentShortage: data.latestShortage,
+            talentStructure: (() => {
+                const row = companyLatestRecordsMap.get(name);
+                const detail = typeof row?.shortage_detail === 'string'
+                    ? JSON.parse(row.shortage_detail)
+                    : (row?.shortage_detail || {});
+                return {
+                    general: detail.general || 0,
+                    tech: detail.tech || 0,
+                    mgmt: detail.mgmt || 0
+                };
+            })()
         }))
         .sort((a, b) => b.avgEmployees - a.avgEmployees)
         .slice(0, 5);
@@ -915,6 +1006,7 @@ export async function getIndustryDetail(industryName: string): Promise<IndustryD
         monthlyTrend: recentTrend,
         topCompanies,
         townDistribution,
+        talentStructure
     };
 }
 
@@ -953,6 +1045,7 @@ export async function getTownDetail(townName: string): Promise<TownDetailRespons
     const monthMap = new Map<string, { employees: number; recruited: number; resigned: number; shortage: number }>();
     const companyMonthlyData = new Map<string, { months: number; totalEmployees: number; totalRecruited: number; totalResigned: number; lastShortage: number }>();
     const industryMonthlyData = new Map<string, { months: Set<string>; totalEmployees: number }>();
+    const companyLatestRecordsMap = new Map<string, any>();
 
     // Sort by date ascending
     townData.sort((a, b) => new Date(a.report_month).getTime() - new Date(b.report_month).getTime());
@@ -983,6 +1076,7 @@ export async function getTownDetail(townName: string): Promise<TownDetailRespons
         cData.totalRecruited += (row.recruited_new || 0);
         cData.totalResigned += (row.resigned_total || 0);
         cData.lastShortage = (row.shortage_total || 0);
+        companyLatestRecordsMap.set(compName, row); // Store latest record for each company for talent structure calculation
 
         // Industry aggregation
         if (!industryMonthlyData.has(industry)) {
@@ -1027,7 +1121,18 @@ export async function getTownDetail(townName: string): Promise<TownDetailRespons
             avgEmployees: Math.round(data.totalEmployees / data.months),
             totalRecruited: data.totalRecruited,
             totalResigned: data.totalResigned,
-            currentShortage: data.lastShortage
+            currentShortage: data.lastShortage,
+            talentStructure: (() => {
+                const row = companyLatestRecordsMap.get(name);
+                const detail = typeof row?.shortage_detail === 'string'
+                    ? JSON.parse(row.shortage_detail)
+                    : (row?.shortage_detail || {});
+                return {
+                    general: detail.general || 0,
+                    tech: detail.tech || 0,
+                    mgmt: detail.mgmt || 0
+                };
+            })()
         }))
         .sort((a, b) => b.avgEmployees - a.avgEmployees)
         .slice(0, 5);

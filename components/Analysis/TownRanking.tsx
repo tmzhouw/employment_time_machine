@@ -105,7 +105,7 @@ export function TownRanking({ data }: TownRankingProps) {
                             cursor={{ fill: '#f1f5f9' }}
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                             itemStyle={{ color: config.color, fontWeight: 600 }}
-                            formatter={(value: number) => [config.formatter(value), config.label]}
+                            formatter={(value: any) => [config.formatter(value as number), config.label]}
                             labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '4px' }}
                         />
                         <Bar
@@ -113,7 +113,7 @@ export function TownRanking({ data }: TownRankingProps) {
                             fill={config.color}
                             radius={[0, 4, 4, 0]}
                             barSize={24}
-                            background={{ fill: '#f8fafc', radius: [0, 4, 4, 0] }}
+                            background={{ fill: '#f8fafc', radius: [0, 4, 4, 0] } as any}
                         >
                             {sortedData.map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={config.color} fillOpacity={0.8 + (index * 0.02)} />

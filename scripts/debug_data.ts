@@ -1,59 +1,59 @@
 
-import {
-    getTrendData,
-    getIndustryDistribution,
-    getReportSummary,
-    getTopShortageCompanies,
-    getTopRecruitingCompanies,
-    getRegionalDistribution,
-    getTopTurnoverCompanies,
-    getTopGrowthCompanies,
-    getCompanyHistory
-} from '../lib/data';
+import { createClient } from '@supabase/supabase-js';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function debugData() {
-    try {
-        console.log('Testing getTrendData...');
-        await getTrendData({});
-        console.log('✓ getTrendData passed');
+    console.log('🔍 Debugging shortage_detail column...');
 
-        console.log('Testing getIndustryDistribution...');
-        await getIndustryDistribution({});
-        console.log('✓ getIndustryDistribution passed');
+    // 1. Fetch one row
+    const { data: rows, error: fetchError } = await supabase
+        .from('monthly_reports')
+        .select('*')
+        .gt('shortage_total', 0)
+        .limit(1);
 
-        console.log('Testing getReportSummary...');
-        await getReportSummary({});
-        console.log('✓ getReportSummary passed');
+    if (fetchError) {
+        console.error('❌ Fetch Error:', fetchError);
+        return;
+    }
 
-        console.log('Testing getTopShortageCompanies...');
-        await getTopShortageCompanies(5, {});
-        console.log('✓ getTopShortageCompanies passed');
+    if (!rows || rows.length === 0) {
+        console.log('⚠️ No rows with shortage > 0 found.');
+        return;
+    }
 
-        console.log('Testing getTopRecruitingCompanies...');
-        await getTopRecruitingCompanies(5, {});
-        console.log('✓ getTopRecruitingCompanies passed');
+    const row = rows[0];
+    console.log('📄 Sample Row:', {
+        id: row.id,
+        employees: row.employees_total,
+        shortage: row.shortage_total,
+        shortage_detail: row.shortage_detail // Check if this field exists in response
+    });
 
-        console.log('Testing getRegionalDistribution...');
-        await getRegionalDistribution({});
-        console.log('✓ getRegionalDistribution passed');
+    if (row.shortage_detail === undefined) {
+        console.error('❌ `shortage_detail` column is undefined in the response! It likely does not exist.');
+    } else {
+        console.log('✅ `shortage_detail` column exists.');
+    }
 
-        console.log('Testing getTopTurnoverCompanies...');
-        await getTopTurnoverCompanies(5, {});
-        console.log('✓ getTopTurnoverCompanies passed');
+    // 2. Try to update
+    console.log('🔄 Attempting update...');
+    const dummyDetail = { general: 1, tech: 1, mgmt: 1 };
 
-        console.log('Testing getTopGrowthCompanies...');
-        await getTopGrowthCompanies(5, {});
-        console.log('✓ getTopGrowthCompanies passed');
+    const { error: updateError } = await supabase
+        .from('monthly_reports')
+        .update({ shortage_detail: dummyDetail })
+        .eq('id', row.id);
 
-        console.log('Testing getCompanyHistory (null case)...');
-        // This simulates the behavior when no company param is present
-        // But page.tsx calls Promise.resolve(null), so let's test a real call just in case
-        await getCompanyHistory('Test Company');
-        console.log('✓ getCompanyHistory passed');
-
-    } catch (error) {
-        console.error('❌ Data fetching failed:', error);
-        process.exit(1);
+    if (updateError) {
+        console.error('❌ Update Failed:', updateError);
+    } else {
+        console.log('✅ Update Successful!');
     }
 }
 

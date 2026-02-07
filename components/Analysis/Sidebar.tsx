@@ -5,7 +5,8 @@ import {
     TrendingUp,
     MapPin,
     Factory,
-    GitCompare
+    GitCompare,
+    UserPlus
 } from 'lucide-react';
 
 const tabs = [
@@ -32,6 +33,12 @@ const tabs = [
         href: '/analysis/industry',
         icon: Factory,
         description: '行业洞察分析'
+    },
+    {
+        name: '人才',
+        href: '/analysis/talent',
+        icon: UserPlus,
+        description: '岗位需求分析'
     },
     {
         name: '对比',

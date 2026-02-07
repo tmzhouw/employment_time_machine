@@ -82,7 +82,7 @@ export function IndustryRanking({ data }: IndustryRankingProps) {
                             cursor={{ fill: '#f1f5f9' }}
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                             itemStyle={{ color: config.color, fontWeight: 600 }}
-                            formatter={(value: number) => [config.formatter(value), config.label]}
+                            formatter={(value: any) => [config.formatter(value as number), config.label]}
                             labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '4px' }}
                         />
                         <Bar
@@ -90,7 +90,7 @@ export function IndustryRanking({ data }: IndustryRankingProps) {
                             fill={config.color}
                             radius={[0, 6, 6, 0]}
                             barSize={22}
-                            background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] }}
+                            background={{ fill: '#f8fafc', radius: [0, 6, 6, 0] } as any}
                         >
                             {sortedData.map((_, index) => (
                                 <Cell key={`cell-${index}`} fill={config.color} fillOpacity={1 - (index * 0.06)} />
