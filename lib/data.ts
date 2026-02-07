@@ -667,16 +667,31 @@ export async function getYearOverYearComparison(
     return result;
 }
 
+// Output interface for getQuarterlyBreakdown
+interface QuarterlyData {
+    year: string;
+    quarter: string;
+    employees: number;
+    recruited: number;
+    resigned: number;
+    shortage: number; // Added shortage
+}
+
 /**
- * Get quarterly breakdown for trend insights
+ * Get quarterly breakdown with shortage data
  */
 export async function getQuarterlyBreakdown(
     filters?: { industry?: string; town?: string }
-): Promise<Array<{ year: string; quarter: string; employees: number; recruited: number; resigned: number }>> {
+): Promise<QuarterlyData[]> {
     const allData = await fetchAllRawData();
     const filteredData = applyFilters(allData, filters);
 
-    const quarterlyData = new Map<string, { employees: number[]; recruited: number; resigned: number }>();
+    const quarterlyData = new Map<string, {
+        employees: number[];
+        recruited: number;
+        resigned: number;
+        shortage: number[]; // Track shortage samples
+    }>();
 
     filteredData.forEach((row: any) => {
         const date = new Date(row.report_month);
@@ -686,11 +701,17 @@ export async function getQuarterlyBreakdown(
         const key = `${year}-Q${quarter}`;
 
         if (!quarterlyData.has(key)) {
-            quarterlyData.set(key, { employees: [], recruited: 0, resigned: 0 });
+            quarterlyData.set(key, {
+                employees: [],
+                recruited: 0,
+                resigned: 0,
+                shortage: []
+            });
         }
 
         const qData = quarterlyData.get(key)!;
         qData.employees.push(row.employees_total || 0);
+        qData.shortage.push(row.shortage_total || 0);
         qData.recruited += row.recruited_new || 0;
         qData.resigned += row.resigned_total || 0;
     });
@@ -701,10 +722,95 @@ export async function getQuarterlyBreakdown(
             return {
                 year,
                 quarter,
-                employees: Math.round(data.employees.reduce((sum, val) => sum + val, 0) / data.employees.length),
+                employees: Math.round(data.employees.reduce((sum, val) => sum + val, 0) / (data.employees.length || 1)),
+                shortage: Math.round(data.shortage.reduce((sum, val) => sum + val, 0) / (data.shortage.length || 1)),
                 recruited: data.recruited,
                 resigned: data.resigned
             };
         })
         .sort((a, b) => `${a.year}-${a.quarter}`.localeCompare(`${b.year}-${b.quarter}`));
+}
+
+/**
+ * Get seasonal (monthly) averages across all years
+ * Used for heatmaps and identifying seasonal patterns
+ */
+export async function getSeasonalStats(
+    filters?: { industry?: string; town?: string }
+): Promise<Array<{ month: number; avgRecruited: number; avgResigned: number; avgShortage: number; peakMonth?: boolean }>> {
+    const allData = await fetchAllRawData();
+    const filteredData = applyFilters(allData, filters);
+
+    // Group by month (1-12) regardless of year
+    const monthlyStats = new Map<number, {
+        recruited: number[],
+        resigned: number[],
+        shortage: number[]
+    }>();
+
+    // Initialize 1-12
+    for (let i = 1; i <= 12; i++) {
+        monthlyStats.set(i, { recruited: [], resigned: [], shortage: [] });
+    }
+
+    filteredData.forEach((row: any) => {
+        const date = new Date(row.report_month);
+        const month = date.getMonth() + 1;
+
+        const mData = monthlyStats.get(month)!;
+        // We aggregate by summing per month-year first, or just taking raw samples?
+        // Since we want "Average Recruited per Month", we should probably take the SUM of all companies for that specific month-year, 
+        // and then average those sums across years? 
+        // OR simpler: Just average the per-company values? 
+        // "Seasonal Pattern" usually implies "Total Market Volume". 
+        // So we should sum totals for "2023-01", "2024-01" etc, then average those totals.
+
+        // Let's do it in two passes: 
+        // 1. Sum by YYYY-MM
+        // 2. Group YYYY-MM sums by MM and average
+    });
+
+    // Pass 1: Aggregate by YYYY-MM
+    const yearMonthSums = new Map<string, { recruited: number; resigned: number; shortage: number }>();
+
+    filteredData.forEach((row: any) => {
+        const key = row.report_month.substring(0, 7); // YYYY-MM
+        if (!yearMonthSums.has(key)) {
+            yearMonthSums.set(key, { recruited: 0, resigned: 0, shortage: 0 });
+        }
+        const period = yearMonthSums.get(key)!;
+        period.recruited += row.recruited_new || 0;
+        period.resigned += row.resigned_total || 0;
+        period.shortage += row.shortage_total || 0;
+    });
+
+    // Pass 2: Aggregate by Month (1-12)
+    const seasonalSums = new Map<number, {
+        recruitedSamples: number[],
+        resignedSamples: number[],
+        shortageSamples: number[]
+    }>();
+
+    for (let i = 1; i <= 12; i++) {
+        seasonalSums.set(i, { recruitedSamples: [], resignedSamples: [], shortageSamples: [] });
+    }
+
+    yearMonthSums.forEach((data, yyyyMm) => {
+        const month = parseInt(yyyyMm.split('-')[1]);
+        const sData = seasonalSums.get(month)!;
+        sData.recruitedSamples.push(data.recruited);
+        sData.resignedSamples.push(data.resigned);
+        sData.shortageSamples.push(data.shortage);
+    });
+
+    // Calculate averages
+    return Array.from(seasonalSums.entries()).map(([month, data]) => {
+        const avg = (arr: number[]) => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+        return {
+            month,
+            avgRecruited: avg(data.recruitedSamples),
+            avgResigned: avg(data.resignedSamples),
+            avgShortage: avg(data.shortageSamples)
+        };
+    }).sort((a, b) => a.month - b.month);
 }

@@ -19,30 +19,44 @@ interface MultiYearTrendChartProps {
 
 type MetricType = 'employees' | 'shortage' | 'recruited' | 'resigned';
 
-const METRIC_CONFIG = {
+interface MetricConfig {
+    label: string;
+    color: string;
+    icon: any;
+    yAxisLabel: string;
+    domain?: (number | string)[];
+    ticks?: number[];
+}
+
+const METRIC_CONFIG: Record<string, MetricConfig> = {
     employees: {
         label: '在岗人数',
         color: '#3b82f6', // blue-500
         icon: Users,
-        yAxisLabel: '人数 (人)'
+        yAxisLabel: '人数 (人)',
+        domain: [22000, 26000],
+        ticks: [22000, 23000, 24000, 25000, 26000]
     },
     shortage: {
         label: '缺工人数',
         color: '#f59e0b', // amber-500
         icon: AlertCircle,
-        yAxisLabel: '缺工 (人)'
+        yAxisLabel: '缺工 (人)',
+        domain: [0, 'auto']
     },
     recruited: {
         label: '新招人数',
         color: '#10b981', // green-500
         icon: TrendingUp,
-        yAxisLabel: '新招 (人)'
+        yAxisLabel: '新招 (人)',
+        domain: [0, 'auto']
     },
     resigned: {
         label: '流失人数',
         color: '#ef4444', // red-500
         icon: TrendingDown,
-        yAxisLabel: '流失 (人)'
+        yAxisLabel: '流失 (人)',
+        domain: [0, 'auto']
     }
 };
 
@@ -106,6 +120,8 @@ export function MultiYearTrendChart({ data }: MultiYearTrendChartProps) {
                         stroke="#64748b"
                         tick={{ fontSize: 12 }}
                         label={{ value: config.yAxisLabel, angle: -90, position: 'insideLeft' }}
+                        domain={config.domain as [number | string, number | string]}
+                        ticks={config.ticks}
                     />
                     <Tooltip
                         contentStyle={{
