@@ -674,6 +674,387 @@ export async function getTownStats(filters?: { industry?: string }): Promise<Tow
     return stats.sort((a, b) => b.totalEmployees - a.totalEmployees);
 }
 
+// ===== Industry Stats (Phase 4) =====
+export interface IndustryStat {
+    name: string;
+    totalEmployees: number;
+    shortageCount: number;
+    shortageRate: number;
+    topTown: string;
+    turnoverRate: number;
+    companyCount: number;
+    avgEmployeesPerCompany: number;
+}
+
+export async function getIndustryStats(filters?: { town?: string }): Promise<IndustryStat[]> {
+    const allData = await fetchAllRawData();
+    const filteredData = applyFilters(allData, filters);
+
+    if (filteredData.length === 0) return [];
+
+    // Latest month snapshot
+    filteredData.sort((a, b) => new Date(b.report_month).getTime() - new Date(a.report_month).getTime());
+    const latestMonth = filteredData[0].report_month;
+    const currentData = filteredData.filter(d => d.report_month === latestMonth);
+
+    // Group by Industry
+    const industryGroups = new Map<string, {
+        employees: number;
+        shortage: number;
+        recruited: number;
+        resigned: number;
+        companies: any[];
+    }>();
+
+    currentData.forEach((row: any) => {
+        const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+        const industry = comp?.industry || '其他';
+
+        if (!industryGroups.has(industry)) {
+            industryGroups.set(industry, { employees: 0, shortage: 0, recruited: 0, resigned: 0, companies: [] });
+        }
+
+        const group = industryGroups.get(industry)!;
+        group.employees += (row.employees_total || 0);
+        group.shortage += (row.shortage_total || 0);
+        group.recruited += (row.recruited_new || 0);
+        group.resigned += (row.resigned_total || 0);
+        group.companies.push(row);
+    });
+
+    const stats: IndustryStat[] = [];
+
+    industryGroups.forEach((group, industry) => {
+        if (industry === '未知') return;
+
+        // Find Top Town in this industry
+        const townCounts = new Map<string, number>();
+        group.companies.forEach(row => {
+            const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+            const town = comp?.town || '未知';
+            townCounts.set(town, (townCounts.get(town) || 0) + (row.employees_total || 0));
+        });
+
+        const topTown = Array.from(townCounts.entries())
+            .sort((a, b) => b[1] - a[1])[0]?.[0] || '综合';
+
+        const turnoverRate = group.employees > 0 ? (group.resigned / group.employees) * 100 : 0;
+        const shortageRate = (group.employees + group.shortage) > 0
+            ? (group.shortage / (group.employees + group.shortage)) * 100
+            : 0;
+        const avgEmployees = group.companies.length > 0 ? group.employees / group.companies.length : 0;
+
+        stats.push({
+            name: industry,
+            totalEmployees: group.employees,
+            shortageCount: group.shortage,
+            shortageRate: parseFloat(shortageRate.toFixed(2)),
+            topTown: topTown,
+            turnoverRate: parseFloat(turnoverRate.toFixed(2)),
+            companyCount: group.companies.length,
+            avgEmployeesPerCompany: parseFloat(avgEmployees.toFixed(0)),
+        });
+    });
+
+    return stats.sort((a, b) => b.totalEmployees - a.totalEmployees);
+}
+
+// ===== Industry Detail (Phase 4 - Modal) =====
+export interface IndustryMonthlyPoint {
+    month: string;       // e.g. "2025-01"
+    monthLabel: string;  // e.g. "1月"
+    employees: number;
+    recruited: number;
+    resigned: number;
+    shortage: number;
+}
+
+export interface IndustryTopCompany {
+    name: string;
+    avgEmployees: number;
+    totalRecruited: number;
+    totalResigned: number;
+    currentShortage: number;
+}
+
+export interface IndustryTownDistribution {
+    town: string;
+    avgEmployees: number;
+}
+
+export interface IndustryDetailResponse {
+    name: string;
+    companyCount: number;
+    avgMonthlyEmployees: number;
+    yearGrowthRate: number;  // %
+    totalRecruited: number;
+    totalResigned: number;
+    netGrowth: number;
+    monthlyTrend: IndustryMonthlyPoint[];
+    topCompanies: IndustryTopCompany[];
+    townDistribution: IndustryTownDistribution[];
+}
+
+export async function getIndustryDetail(industryName: string): Promise<IndustryDetailResponse> {
+    const allData = await fetchAllRawData();
+
+    // Filter to this industry only
+    const industryData = allData.filter((row: any) => {
+        const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+        return comp?.industry === industryName;
+    });
+
+    if (industryData.length === 0) {
+        return {
+            name: industryName, companyCount: 0, avgMonthlyEmployees: 0,
+            yearGrowthRate: 0, totalRecruited: 0, totalResigned: 0, netGrowth: 0,
+            monthlyTrend: [], topCompanies: [], townDistribution: []
+        };
+    }
+
+    // Group by month
+    const monthMap = new Map<string, { employees: number; recruited: number; resigned: number; shortage: number }>();
+    const companyMonthlyData = new Map<string, { months: number; totalEmployees: number; totalRecruited: number; totalResigned: number; latestShortage: number }>();
+    const townMonthlyData = new Map<string, { months: Set<string>; totalEmployees: number }>();
+
+    industryData.forEach((row: any) => {
+        const month = row.report_month?.substring(0, 7) || '';
+        const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+        const compName = comp?.name || '未知';
+        const town = comp?.town || '未知';
+
+        // Monthly aggregation
+        if (!monthMap.has(month)) {
+            monthMap.set(month, { employees: 0, recruited: 0, resigned: 0, shortage: 0 });
+        }
+        const mData = monthMap.get(month)!;
+        mData.employees += (row.employees_total || 0);
+        mData.recruited += (row.recruited_new || 0);
+        mData.resigned += (row.resigned_total || 0);
+        mData.shortage += (row.shortage_total || 0);
+
+        // Company aggregation
+        if (!companyMonthlyData.has(compName)) {
+            companyMonthlyData.set(compName, { months: 0, totalEmployees: 0, totalRecruited: 0, totalResigned: 0, latestShortage: 0 });
+        }
+        const cData = companyMonthlyData.get(compName)!;
+        cData.months += 1;
+        cData.totalEmployees += (row.employees_total || 0);
+        cData.totalRecruited += (row.recruited_new || 0);
+        cData.totalResigned += (row.resigned_total || 0);
+        cData.latestShortage = (row.shortage_total || 0); // Will be latest since data is sorted
+
+        // Town aggregation
+        if (town !== '未知') {
+            if (!townMonthlyData.has(town)) {
+                townMonthlyData.set(town, { months: new Set(), totalEmployees: 0 });
+            }
+            const tData = townMonthlyData.get(town)!;
+            tData.months.add(month);
+            tData.totalEmployees += (row.employees_total || 0);
+        }
+    });
+
+    // Monthly trend sorted by month
+    const monthlyTrend: IndustryMonthlyPoint[] = Array.from(monthMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([month, data]) => ({
+            month,
+            monthLabel: parseInt(month.split('-')[1]) + '月',
+            ...data,
+        }));
+
+    // Only keep latest 12 months for display
+    const recentTrend = monthlyTrend.slice(-12);
+
+    // Calculate KPIs
+    const totalMonths = monthlyTrend.length;
+    const totalEmployeesAllMonths = monthlyTrend.reduce((s, m) => s + m.employees, 0);
+    const avgMonthlyEmployees = totalMonths > 0 ? Math.round(totalEmployeesAllMonths / totalMonths) : 0;
+
+    const firstMonth = monthlyTrend[0]?.employees || 0;
+    const lastMonth = monthlyTrend[monthlyTrend.length - 1]?.employees || 0;
+    const yearGrowthRate = firstMonth > 0 ? parseFloat(((lastMonth - firstMonth) / firstMonth * 100).toFixed(1)) : 0;
+
+    const totalRecruited = monthlyTrend.reduce((s, m) => s + m.recruited, 0);
+    const totalResigned = monthlyTrend.reduce((s, m) => s + m.resigned, 0);
+    const netGrowth = totalRecruited - totalResigned;
+
+    // Top companies by avg employees
+    const topCompanies: IndustryTopCompany[] = Array.from(companyMonthlyData.entries())
+        .map(([name, data]) => ({
+            name,
+            avgEmployees: Math.round(data.totalEmployees / data.months),
+            totalRecruited: data.totalRecruited,
+            totalResigned: data.totalResigned,
+            currentShortage: data.latestShortage,
+        }))
+        .sort((a, b) => b.avgEmployees - a.avgEmployees)
+        .slice(0, 5);
+
+    // Town distribution
+    const townDistribution: IndustryTownDistribution[] = Array.from(townMonthlyData.entries())
+        .map(([town, data]) => ({
+            town,
+            avgEmployees: Math.round(data.totalEmployees / data.months.size),
+        }))
+        .sort((a, b) => b.avgEmployees - a.avgEmployees)
+        .slice(0, 5);
+
+    // Unique companies count
+    const companyCount = companyMonthlyData.size;
+
+    return {
+        name: industryName,
+        companyCount,
+        avgMonthlyEmployees,
+        yearGrowthRate,
+        totalRecruited,
+        totalResigned,
+        netGrowth,
+        monthlyTrend: recentTrend,
+        topCompanies,
+        townDistribution,
+    };
+}
+
+// ===== Town Detail (Phase 4.5 - Town Modal) =====
+export interface TownDetailResponse {
+    name: string;
+    companyCount: number;
+    avgMonthlyEmployees: number;
+    yearGrowthRate: number;
+    totalRecruited: number;
+    totalResigned: number;
+    netGrowth: number;
+    monthlyTrend: IndustryMonthlyPoint[]; // Reuse same point structure
+    topCompanies: IndustryTopCompany[];   // Reuse same company structure
+    industryDistribution: { industry: string; avgEmployees: number }[];
+}
+
+export async function getTownDetail(townName: string): Promise<TownDetailResponse> {
+    const allData = await fetchAllRawData();
+
+    // Filter to this town only
+    const townData = allData.filter((row: any) => {
+        const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+        return comp?.town === townName;
+    });
+
+    if (townData.length === 0) {
+        return {
+            name: townName, companyCount: 0, avgMonthlyEmployees: 0,
+            yearGrowthRate: 0, totalRecruited: 0, totalResigned: 0, netGrowth: 0,
+            monthlyTrend: [], topCompanies: [], industryDistribution: []
+        };
+    }
+
+    // Group by month
+    const monthMap = new Map<string, { employees: number; recruited: number; resigned: number; shortage: number }>();
+    const companyMonthlyData = new Map<string, { months: number; totalEmployees: number; totalRecruited: number; totalResigned: number; lastShortage: number }>();
+    const industryMonthlyData = new Map<string, { months: Set<string>; totalEmployees: number }>();
+
+    // Sort by date ascending
+    townData.sort((a, b) => new Date(a.report_month).getTime() - new Date(b.report_month).getTime());
+
+    townData.forEach((row: any) => {
+        const month = row.report_month?.substring(0, 7) || '';
+        const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+        const compName = comp?.name || '未知';
+        const industry = comp?.industry || '其他';
+
+        // Monthly aggregation
+        if (!monthMap.has(month)) {
+            monthMap.set(month, { employees: 0, recruited: 0, resigned: 0, shortage: 0 });
+        }
+        const mData = monthMap.get(month)!;
+        mData.employees += (row.employees_total || 0);
+        mData.recruited += (row.recruited_new || 0);
+        mData.resigned += (row.resigned_total || 0);
+        mData.shortage += (row.shortage_total || 0);
+
+        // Company aggregation
+        if (!companyMonthlyData.has(compName)) {
+            companyMonthlyData.set(compName, { months: 0, totalEmployees: 0, totalRecruited: 0, totalResigned: 0, lastShortage: 0 });
+        }
+        const cData = companyMonthlyData.get(compName)!;
+        cData.months += 1;
+        cData.totalEmployees += (row.employees_total || 0);
+        cData.totalRecruited += (row.recruited_new || 0);
+        cData.totalResigned += (row.resigned_total || 0);
+        cData.lastShortage = (row.shortage_total || 0);
+
+        // Industry aggregation
+        if (!industryMonthlyData.has(industry)) {
+            industryMonthlyData.set(industry, { months: new Set(), totalEmployees: 0 });
+        }
+        const iData = industryMonthlyData.get(industry)!;
+        iData.months.add(month);
+        iData.totalEmployees += (row.employees_total || 0);
+    });
+
+    // Monthly Trend
+    const monthlyTrend = Array.from(monthMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([month, data]) => ({
+            month,
+            monthLabel: parseInt(month.split('-')[1]) + '月',
+            ...data
+        }));
+
+    // Only keep latest 12 months for display
+    const recentTrend = monthlyTrend.slice(-12);
+
+    // KPIs
+    const totalMonths = monthlyTrend.length;
+    const totalEmployeesAllMonths = monthlyTrend.reduce((s, m) => s + m.employees, 0);
+    const avgMonthlyEmployees = totalMonths > 0 ? Math.round(totalEmployeesAllMonths / totalMonths) : 0;
+
+    const firstMonth = monthlyTrend[0]?.employees || 0;
+    const lastMonth = monthlyTrend[monthlyTrend.length - 1]?.employees || 0;
+    const yearGrowthRate = firstMonth > 0 ? parseFloat(((lastMonth - firstMonth) / firstMonth * 100).toFixed(1)) : 0;
+
+    const totalRecruited = monthlyTrend.reduce((s, m) => s + m.recruited, 0);
+    const totalResigned = monthlyTrend.reduce((s, m) => s + m.resigned, 0);
+    const netGrowth = totalRecruited - totalResigned;
+
+    const companyCount = companyMonthlyData.size;
+
+    // Top Companies
+    const topCompanies = Array.from(companyMonthlyData.entries())
+        .map(([name, data]) => ({
+            name,
+            avgEmployees: Math.round(data.totalEmployees / data.months),
+            totalRecruited: data.totalRecruited,
+            totalResigned: data.totalResigned,
+            currentShortage: data.lastShortage
+        }))
+        .sort((a, b) => b.avgEmployees - a.avgEmployees)
+        .slice(0, 5);
+
+    // Industry Distribution
+    const industryDistribution = Array.from(industryMonthlyData.entries())
+        .map(([industry, data]) => ({
+            industry,
+            avgEmployees: Math.round(data.totalEmployees / data.months.size)
+        }))
+        .sort((a, b) => b.avgEmployees - a.avgEmployees)
+        .slice(0, 5);
+
+    return {
+        name: townName,
+        companyCount,
+        avgMonthlyEmployees,
+        yearGrowthRate,
+        totalRecruited,
+        totalResigned: totalResigned,
+        netGrowth,
+        monthlyTrend: recentTrend,
+        topCompanies,
+        industryDistribution
+    };
+}
+
 // Output interface for company history
 export interface CompanyHistoryRecord {
     report_month: string;

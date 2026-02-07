@@ -1,6 +1,8 @@
 import { getTownStats, TownStat } from '@/lib/data';
 import { TownMap } from '@/components/Analysis/TownMap';
 import { TownRanking } from '@/components/Analysis/TownRanking';
+import { TownDetailTable } from '@/components/Analysis/TownDetailTable';
+import { EnterpriseDetailModal } from '@/components/TimeMachine/EnterpriseDetailModal';
 import { RegionComparison } from '@/components/Analysis/RegionComparison';
 import { Suspense } from 'react';
 import { MapPin, Users, AlertCircle, TrendingUp } from 'lucide-react';
@@ -86,6 +88,16 @@ export default async function GeographyAnalysisPage() {
                 </div>
             </div>
 
+
+
+            {/* Town Detail Table */}
+            <section>
+                <TownDetailTable data={townStats} />
+            </section>
+
+            {/* Enterprise Detail Modal */}
+            <EnterpriseDetailModal data={null} />
+
             {/* 3. Comparison */}
             <section>
                 <div className="flex items-center gap-2 mb-4">
@@ -95,7 +107,7 @@ export default async function GeographyAnalysisPage() {
                     <RegionComparison data={townStats} />
                 </Suspense>
             </section>
-        </div>
+        </div >
     );
 }
 
