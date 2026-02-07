@@ -31,6 +31,7 @@ async function fetchAllRawData() {
                 *,
                 companies (name, industry, town)
             `)
+            .order('id', { ascending: true })
             .range(from, to);
 
         if (error) {
@@ -294,56 +295,6 @@ export async function getIndustryDistribution(filters?: { industry?: string, tow
         .sort((a, b) => b.value - a.value);
 }
 
-export async function getCompanyHistory(companyName: string) {
-    // 1. Find company ID first
-    const { data: companies } = await supabase
-        .from('companies')
-        .select('id, name, industry, town, contact_person, contact_phone')
-        .eq('name', companyName)
-        .limit(1);
-
-    if (!companies || companies.length === 0) return null;
-    const company = companies[0];
-
-    // 2. Fetch all reports for this company
-    const { data: reports } = await supabase
-        .from('monthly_reports')
-        .select('*')
-        .eq('company_id', company.id)
-        .order('report_month', { ascending: true });
-
-    if (!reports) return { info: company, history: [] };
-
-    // 3. Format history
-    const history = reports.map((r: any) => ({
-        month: r.report_month,
-        employees: r.employees_total || 0,
-        recruited: r.recruited_new || 0,
-        resigned: r.resigned_total || 0,
-        shortage: r.shortage_total || 0,
-        net_growth: r.net_growth || 0
-    }));
-
-    // 4. Calculate Summary Stats
-    const totalRecruited = history.reduce((sum: number, r: any) => sum + r.recruited, 0);
-    const totalResigned = history.reduce((sum: number, r: any) => sum + r.resigned, 0);
-    const netGrowth = totalRecruited - totalResigned;
-    const maxShortage = Math.max(...history.map((r: any) => r.shortage));
-    const avgShortage = Math.round(history.reduce((sum: number, r: any) => sum + r.shortage, 0) / (history.length || 1));
-
-    return {
-        info: company,
-        history,
-        stats: {
-            totalRecruited,
-            totalResigned,
-            netGrowth,
-            maxShortage,
-            avgShortage
-        }
-    };
-}
-
 export async function getRegionalDistribution(filters?: { industry?: string, town?: string }) {
     const allData = await fetchAllRawData();
     const filteredData = applyFilters(allData, filters);
@@ -595,6 +546,101 @@ export async function getMultiYearTrendData(
 
     // Sort chronologically and return
     return Array.from(monthlyAggregates.values()).sort((a, b) => a.month.localeCompare(b.month));
+}
+
+// Output interface for company history
+export interface CompanyHistoryRecord {
+    report_month: string;
+    employees_total: number;
+    recruited_new: number;
+    resigned_total: number;
+    shortage_total: number;
+}
+
+/**
+ * Get full history for a specific company
+ */
+export interface CompanyHistoryResponse {
+    info: {
+        id: string;
+        name: string;
+        industry: string;
+        town: string;
+        contact_person: string | null;
+        contact_phone: string | null;
+    } | null;
+    history: CompanyHistoryRecord[];
+}
+
+export async function getCompanyHistory(companyName: string): Promise<CompanyHistoryResponse> {
+    // 1. Get Company Info
+    const { data: companies, error: companyError } = await supabase
+        .from('companies')
+        .select('id, name, industry, town, contact_person, contact_phone')
+        .eq('name', companyName)
+        .limit(1);
+
+    if (companyError || !companies || companies.length === 0) {
+        console.error('Company fetch error:', companyError);
+        return { info: null, history: [] };
+    }
+
+    const company = companies[0];
+
+    // 2. Get History Records directly
+    // Using direct query avoids pagination issues with fetchAllRawData
+    const { data: reports, error: reportsError } = await supabase
+        .from('monthly_reports')
+        .select('*')
+        .eq('company_id', company.id)
+        .order('report_month', { ascending: true });
+
+    if (reportsError) {
+        console.error('Reports fetch error:', reportsError);
+        return { info: null, history: [] };
+    }
+
+    const companyInfo = {
+        id: company.id,
+        name: company.name,
+        industry: company.industry || '未知',
+        town: company.town || '未知',
+        contact_person: company.contact_person,
+        contact_phone: company.contact_phone
+    };
+
+    const history = (reports || [])
+        .map((row: any) => ({
+            report_month: row.report_month,
+            employees_total: row.employees_total || 0,
+            recruited_new: row.recruited_new || 0,
+            resigned_total: row.resigned_total || 0,
+            shortage_total: row.shortage_total || 0,
+        }))
+        // Ensure sorted by date just in case
+        .sort((a: any, b: any) => new Date(a.report_month).getTime() - new Date(b.report_month).getTime());
+
+    return { info: companyInfo, history };
+}
+
+/**
+ * Get company basic info for Modal initialization
+ * This returns minimal data - the Modal will fetch full history itself
+ */
+export async function getCompanyInfo(companyName: string) {
+    const { data: companies } = await supabase
+        .from('companies')
+        .select('id, name, industry, town, contact_person, contact_phone')
+        .eq('name', companyName)
+        .limit(1);
+
+    if (!companies || companies.length === 0) return null;
+
+    return {
+        info: companies[0],
+        history: [], // Not needed, Modal fetches its own
+        stats: undefined // Not needed, Modal calculates its own
+    };
 }
 
 /**

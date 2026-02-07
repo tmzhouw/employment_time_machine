@@ -18,9 +18,28 @@ interface Props {
 
 export function QuarterlyPerformanceChart({ data }: Props) {
     // Prepare data with combined label
+    // The data.quarter already comes as "Q1", "Q2" etc from the API? 
+    // Let's check getQuarterlyBreakdown in lib/data.ts. 
+    // parsed: const quarter = Math.ceil(month / 3); -> This is just a number 1, 2, 3, 4
+    // key = `${year}-Q${quarter}`;
+    // split: const [year, quarter] = key.split('-'); -> quarter is "Q1", "Q2" etc.
+    // So data.quarter is "Q1".
+    // label: `${d.year} ${d.quarter}` -> "2023 Q1". 
+    // Wait, let's look at the user image. "2023 QQ1". 
+    // This means data.quarter likely already has "Q" and we are adding another one, OR the split logic in data.ts is doing something different.
+
+    // In lib/data.ts:
+    // const key = `${year}-Q${quarter}`; // e.g. "2023-Q1"
+    // const [year, quarter] = key.split('-'); // year="2023", quarter="Q1"
+    // return { year, quarter, ... }
+
+    // So data.quarter IS "Q1".
+    // In this file: label: `${d.year} Q${d.quarter}` -> "2023 QQ1"
+    // FIX: Change to `${d.year} ${d.quarter}`
+
     const chartData = data.map(d => ({
         ...d,
-        label: `${d.year} Q${d.quarter}`,
+        label: `${d.year} ${d.quarter}`,
         shortageRate: d.employees > 0 ? (d.shortage / d.employees * 100).toFixed(1) : 0
     }));
 

@@ -151,26 +151,61 @@ export function MultiYearTrendChart({ data }: MultiYearTrendChartProps) {
             </ResponsiveContainer>
 
             {/* Footer Stats */}
-            <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-200">
-                {(['employees', 'shortage', 'recruited', 'resigned'] as MetricType[]).map((metric) => {
-                    const latestValue = data[data.length - 1]?.[metric] || 0;
-                    const earliestValue = data[0]?.[metric] || 0;
-                    const change = latestValue - earliestValue;
-                    const changePercent = earliestValue > 0 ? (change / earliestValue) * 100 : 0;
-                    const metricConfig = METRIC_CONFIG[metric];
+            <div className="mt-6 pt-6 border-t border-slate-200">
+                <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm font-medium text-slate-500">
+                        截至 {data[data.length - 1]?.monthLabel || '当前'}
+                    </span>
+                </div>
+                <div className="grid grid-cols-4 gap-4">
+                    {(['employees', 'shortage', 'recruited', 'resigned'] as MetricType[]).map((metric) => {
+                        const latestData = data[data.length - 1];
+                        const latestValue = latestData?.[metric] || 0;
+                        const metricConfig = METRIC_CONFIG[metric];
 
-                    return (
-                        <div key={metric} className="text-center">
-                            <p className="text-xs text-slate-500 mb-1">{metricConfig.label}</p>
-                            <p className="text-2xl font-bold text-slate-900">
-                                {latestValue.toLocaleString()}
-                            </p>
-                            <p className={`text-xs mt-1 ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {change >= 0 ? '+' : ''}{changePercent.toFixed(1)}%
-                            </p>
-                        </div>
-                    );
-                })}
+                        // Logic for Recruited/Resigned: Show Monthly + YTD
+                        if (metric === 'recruited' || metric === 'resigned') {
+                            const currentYear = latestData?.month?.substring(0, 4);
+                            const ytdTotal = data
+                                .filter(d => d.month.startsWith(currentYear))
+                                .reduce((sum, d) => sum + (d[metric] || 0), 0);
+
+                            return (
+                                <div key={metric} className="text-center">
+                                    <p className="text-xs text-slate-500 mb-1">{metricConfig.label}</p>
+                                    <p className="text-2xl font-bold text-slate-900">
+                                        {latestValue.toLocaleString()}
+                                    </p>
+                                    <p className="text-xs text-slate-400 mt-1">
+                                        本年累计: {ytdTotal.toLocaleString()}
+                                    </p>
+                                </div>
+                            );
+                        }
+
+                        // Logic for Employees/Shortage: Show Snapshot + Growth (YTD)
+                        // Find the first data point of the current year
+                        const currentYear = latestData?.month?.substring(0, 4);
+                        const startOfYearData = data.find(d => d.month.startsWith(currentYear)) || data[0];
+                        const startValue = startOfYearData?.[metric] || 0;
+
+                        const change = latestValue - startValue;
+                        const changePercent = startValue > 0 ? (change / startValue) * 100 : 0;
+
+                        return (
+                            <div key={metric} className="text-center">
+                                <p className="text-xs text-slate-500 mb-1">{metricConfig.label}</p>
+                                <p className="text-2xl font-bold text-slate-900">
+                                    {latestValue.toLocaleString()}
+                                </p>
+                                <p className={`text-xs mt-1 flex items-center justify-center gap-1 ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    <span>{change >= 0 ? '+' : ''}{changePercent.toFixed(1)}%</span>
+                                    <span className="text-slate-400 scale-90">(较年初)</span>
+                                </p>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

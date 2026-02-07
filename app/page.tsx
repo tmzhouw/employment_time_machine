@@ -7,7 +7,7 @@ import {
     getRegionalDistribution,
     getTopTurnoverCompanies,
     getTopGrowthCompanies,
-    getCompanyHistory
+    getCompanyInfo
 } from '@/lib/data';
 import { ChartSection } from '@/components/TimeMachine/ChartSection';
 import { BarChartSection } from '@/components/TimeMachine/BarChartSection';
@@ -40,7 +40,7 @@ export default async function DashboardPage(props: PageProps) {
         getRegionalDistribution(filters),
         getTopTurnoverCompanies(5, filters),
         getTopGrowthCompanies(5, filters),
-        companyParam ? getCompanyHistory(companyParam) : Promise.resolve(null)
+        companyParam ? getCompanyInfo(companyParam) : Promise.resolve(null)
     ]);
 
     if (!summary) return (
