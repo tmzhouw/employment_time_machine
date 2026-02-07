@@ -35,7 +35,27 @@ async function _fetchViaPostgres(): Promise<any[]> {
         ORDER BY mr.id ASC
     `);
     console.log(`[PG] Fetched ${result.rows.length} records from PostgreSQL`);
-    return result.rows;
+
+    // Normalize Date objects to strings to match Supabase response format
+    // Supabase returns 'YYYY-MM-DD' string for DATE columns
+    return result.rows.map(row => {
+        if (row.report_month instanceof Date) {
+            // Adjust for timezone offset if necessary, but usually simple ISO split is enough for DATE types 
+            // if we assume they were stored as UTC midnight or we just want the date part.
+            // For report_month (DATE type), we want YYYY-MM-DD.
+            const d = new Date(row.report_month);
+            // This ensures we get the YYYY-MM-DD part. 
+            // Note: Date.toISOString() uses UTC. Ensure DB DATE is interpreted correctly.
+            // PG 'DATE' is usually just a date. JS Date will be 00:00:00 local or UTC depending on driver.
+            // Safe bet for 'YYYY-MM-DD':
+            row.report_month = row.report_month.toISOString().split('T')[0];
+        }
+        // created_at / updated_at are timestamps, Supabase returns ISO strings
+        if (row.created_at instanceof Date) row.created_at = row.created_at.toISOString();
+        if (row.updated_at instanceof Date) row.updated_at = row.updated_at.toISOString();
+
+        return row;
+    });
 }
 
 async function _fetchViaSupabase(): Promise<any[]> {
@@ -118,7 +138,11 @@ export async function getTrendData(filters?: { industry?: string, town?: string 
     const currentYear = new Date().getFullYear().toString();
     const allSortedDates = [...new Set(filteredData.map(d => d.report_month))].sort();
     const latestAvailableDate = allSortedDates[allSortedDates.length - 1];
-    const targetYear = latestAvailableDate?.startsWith(currentYear) ? currentYear : (latestAvailableDate?.substring(0, 4) || currentYear);
+
+    // Safety check: if no data, return empty
+    if (!latestAvailableDate) return [];
+
+    const targetYear = latestAvailableDate.startsWith(currentYear) ? currentYear : (latestAvailableDate.substring(0, 4) || currentYear);
 
     const yearData = filteredData.filter(d => d.report_month.startsWith(targetYear));
 
@@ -139,7 +163,6 @@ export async function getTrendData(filters?: { industry?: string, town?: string 
     });
 
     return Array.from(monthlyTotals.values())
-        .sort((a, b) => a.sortInd - b.sortInd)
         .map(({ month, total, shortage }) => ({ month, total, shortage }));
 }
 
