@@ -1264,7 +1264,73 @@ export interface CompanyHistoryResponse {
     history: CompanyHistoryRecord[];
 }
 
+
+// Helper for PG fetch
+async function _fetchCompanyHistoryViaPostgres(companyName: string): Promise<CompanyHistoryResponse> {
+    const pool = getPgPool();
+    if (!pool) throw new Error('PG pool not available');
+
+    // 1. Get Company Info
+    const companyRes = await pool.query(
+        'SELECT id, name, industry, town, contact_person, contact_phone FROM companies WHERE name = $1 LIMIT 1',
+        [companyName]
+    );
+
+    if (companyRes.rows.length === 0) {
+        return { info: null, history: [] };
+    }
+
+    const company = companyRes.rows[0];
+
+    // 2. Get History Records
+    const reportsRes = await pool.query(
+        'SELECT * FROM monthly_reports WHERE company_id = $1 ORDER BY report_month ASC',
+        [company.id]
+    );
+
+    // Normalize Dates
+    const history = reportsRes.rows.map(row => {
+        let report_month = row.report_month;
+        if (report_month instanceof Date) {
+            report_month = report_month.toISOString().split('T')[0];
+        }
+        return {
+            report_month,
+            employees_total: row.employees_total || 0,
+            recruited_new: row.recruited_new || 0,
+            resigned_total: row.resigned_total || 0,
+            shortage_total: row.shortage_total || 0,
+        };
+    });
+
+    return {
+        info: {
+            id: company.id,
+            name: company.name,
+            industry: company.industry || '未知',
+            town: company.town || '未知',
+            contact_person: company.contact_person,
+            contact_phone: company.contact_phone
+        },
+        history
+    };
+}
+
 export async function getCompanyHistory(companyName: string): Promise<CompanyHistoryResponse> {
+    // Try PostgreSQL first if configured
+    if (process.env.DATABASE_URL) {
+        try {
+            return await _fetchCompanyHistoryViaPostgres(companyName);
+        } catch (error) {
+            console.error('[getCompanyHistory] PG Error:', error);
+            // Fallback to Supabase? Usually if DATABASE_URL is set we don't want fallback unless strictly configured.
+            // But let's assume if PG fails we might want to try Supabase if configured.
+            // For now, let's stick to the pattern: if URL set, use PG.
+            return { info: null, history: [] };
+        }
+    }
+
+    // Fallback to Supabase SDK matching original logic
     // 1. Get Company Info
     const { data: companies, error: companyError } = await supabase
         .from('companies')
@@ -1280,7 +1346,6 @@ export async function getCompanyHistory(companyName: string): Promise<CompanyHis
     const company = companies[0];
 
     // 2. Get History Records directly
-    // Using direct query avoids pagination issues with fetchAllRawData
     const { data: reports, error: reportsError } = await supabase
         .from('monthly_reports')
         .select('*')
