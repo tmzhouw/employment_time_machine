@@ -1,0 +1,12 @@
+node_modules
+.next
+.env.local
+.env.production
+.env*.local
+db/*.csv
+nginx/logs
+nginx/ssl
+backups
+.git
+.gitignore
+*.md

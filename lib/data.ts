@@ -76,10 +76,16 @@ async function _fetchViaSupabase(): Promise<any[]> {
 
 // Core fetcher: auto-selects based on environment
 async function _fetchAllRawDataFromDB(): Promise<any[]> {
-    if (process.env.DATABASE_URL) {
-        return _fetchViaPostgres();
+    try {
+        if (process.env.DATABASE_URL) {
+            return await _fetchViaPostgres();
+        }
+        return await _fetchViaSupabase();
+    } catch (error) {
+        // During Docker build, database is not available - return empty array
+        console.warn('[Data] Database not available (build-time?), returning empty data:', (error as Error).message);
+        return [];
     }
-    return _fetchViaSupabase();
 }
 
 // In-memory cache with 5-minute TTL
