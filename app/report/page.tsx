@@ -51,7 +51,7 @@ export default async function ReportPage() {
             <div className="container mx-auto max-w-[210mm] bg-white p-8 sm:p-12 shadow-lg print:shadow-none print:max-w-none print:p-0 min-h-[297mm]">
 
                 {/* 封面/标题 */}
-                <ReportHeader />
+                <ReportHeader dataYear={summaryData.dataYear} />
 
                 {/* 摘要 */}
                 <ReportSummary
@@ -62,6 +62,7 @@ export default async function ReportPage() {
                     growthRate={summaryData.growthRate || 0}
                     topIndustriesShare={summaryData.topIndustriesShare || 0}
                     topTownsShare={summaryData.topTownsShare || 0}
+                    topTowns={summaryData.topTowns || []}
                 />
 
                 {/* 一、总体概况 */}
@@ -72,10 +73,11 @@ export default async function ReportPage() {
                     netGrowth={summaryData.net_growth}
                     growthRate={summaryData.growthRate || 0}
                     shortageRate={summaryData.shortage_rate}
+                    dataYear={summaryData.dataYear}
                 />
 
                 {/* 二、月度趋势分析 */}
-                <TrendAnalysis data={trendData} />
+                <TrendAnalysis data={trendData} dataYear={summaryData.dataYear} />
 
                 {/* 三、行业分布分析 */}
                 <IndustryDistribution
@@ -93,7 +95,25 @@ export default async function ReportPage() {
                 <TalentAnalysis data={talentData} />
 
                 {/* 七、结论与建议 */}
-                <ReportConclusion />
+                <ReportConclusion
+                    dataYear={summaryData.dataYear}
+                    growthRate={summaryData.growthRate || 0}
+                    growthTrend={summaryData.growthTrend}
+                    startEmployment={summaryData.start_employment}
+                    endEmployment={summaryData.avg_employment}
+                    netGrowth={summaryData.net_growth}
+                    topIndustriesShare={summaryData.topIndustriesShare || 0}
+                    topIndustryName={summaryData.topIndustryName}
+                    topIndustrySharePct={summaryData.topIndustrySharePct || 0}
+                    topTowns={summaryData.topTowns || []}
+                    topTownsShare={summaryData.topTownsShare || 0}
+                    shortageRateNum={summaryData.shortageRateNum || 0}
+                    turnoverRateNum={summaryData.turnoverRateNum || 0}
+                    topShortageIndustry={summaryData.topShortageIndustry}
+                    topTurnoverIndustry={summaryData.topTurnoverIndustry}
+                    talentGeneralTechPct={summaryData.talentGeneralTechPct || 0}
+                    industryGrowthRates={summaryData.industryGrowthRates || []}
+                />
 
                 {/* Footer / End of Report */}
                 <div className="mt-16 pt-8 border-t border-gray-200 text-center text-sm text-gray-400 print:hidden">

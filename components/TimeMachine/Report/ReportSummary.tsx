@@ -8,6 +8,7 @@ interface ReportSummaryProps {
     growthRate: number;
     topIndustriesShare: number;
     topTownsShare: number;
+    topTowns: string[];
 }
 
 export function ReportSummary({
@@ -17,8 +18,13 @@ export function ReportSummary({
     netGrowth,
     growthRate,
     topIndustriesShare,
-    topTownsShare
+    topTownsShare,
+    topTowns
 }: ReportSummaryProps) {
+    const townText = topTowns.length >= 2
+        ? `${topTowns[0]}和${topTowns[1]}`
+        : topTowns[0] || '重点乡镇';
+
     return (
         <section className="mb-8 sm:mb-10 md:mb-12">
             <h2 className="report-section-title text-xl sm:text-2xl pb-2 mb-4 sm:mb-6">
@@ -37,7 +43,7 @@ export function ReportSummary({
                 </p>
                 <p>
                     按照"一主两新三支撑"产业布局，六大重点产业共吸纳就业超过<span className="data-highlight">{topIndustriesShare}%</span>。
-                    侯口镇和多祥镇作为主要产业集聚区，合计吸纳就业占比超过<span className="data-highlight">{topTownsShare}%</span>。
+                    {townText}作为主要产业集聚区，合计吸纳就业占比超过<span className="data-highlight">{topTownsShare}%</span>。
                 </p>
             </div>
         </section>

@@ -390,21 +390,104 @@ export async function getReportSummary(filters?: { industry?: string, town?: str
         ? parseFloat(((topIndustriesEmployees / current_total_employees) * 100).toFixed(1))
         : 0;
 
-    // Top Towns Share (Top 2 Towns)
+    // Top Towns Share (Top 2 Towns) — now also return town names
     const townMap = new Map<string, number>();
     latestData.forEach(r => {
         const comp = Array.isArray(r.companies) ? r.companies[0] : r.companies;
         const t = comp?.town || "其他";
         townMap.set(t, (townMap.get(t) || 0) + (r.employees_total || 0));
     });
-    const top2TownsEmployees = Array.from(townMap.values())
-        .sort((a, b) => b - a)
+    const sortedTowns = Array.from(townMap.entries())
+        .sort((a, b) => b[1] - a[1]);
+    const top2TownsEmployees = sortedTowns
         .slice(0, 2)
-        .reduce((sum, val) => sum + val, 0);
+        .reduce((sum, [, val]) => sum + val, 0);
+    const topTowns = sortedTowns.slice(0, 2).map(([name]) => name);
 
     const topTownsShare = current_total_employees > 0
         ? parseFloat(((top2TownsEmployees / current_total_employees) * 100).toFixed(1))
         : 0;
+
+    // Industry-level shortage & turnover analysis
+    const industryMetrics = new Map<string, { employees: number; shortage: number; resigned: number }>();
+    latestData.forEach(r => {
+        const comp = Array.isArray(r.companies) ? r.companies[0] : r.companies;
+        const ind = comp?.industry || '其他';
+        if (!industryMetrics.has(ind)) {
+            industryMetrics.set(ind, { employees: 0, shortage: 0, resigned: 0 });
+        }
+        const m = industryMetrics.get(ind)!;
+        m.employees += (r.employees_total || 0);
+        m.shortage += (r.shortage_total || 0);
+        m.resigned += (r.resigned_total || 0);
+    });
+
+    let topShortageIndustry = '未知';
+    let maxShortageRate = 0;
+    let topTurnoverIndustry = '未知';
+    let maxTurnoverRate = 0;
+    let topIndustryName = '未知';
+    let topIndustryEmployees = 0;
+    industryMetrics.forEach((m, ind) => {
+        if (ind === '未知' || ind === '其他') return;
+        const sr = (m.employees + m.shortage) > 0 ? m.shortage / (m.employees + m.shortage) * 100 : 0;
+        const tr = m.employees > 0 ? m.resigned / m.employees * 100 : 0;
+        if (sr > maxShortageRate) { maxShortageRate = sr; topShortageIndustry = ind; }
+        if (tr > maxTurnoverRate) { maxTurnoverRate = tr; topTurnoverIndustry = ind; }
+        if (m.employees > topIndustryEmployees) { topIndustryEmployees = m.employees; topIndustryName = ind; }
+    });
+
+    const topIndustrySharePct = current_total_employees > 0
+        ? parseFloat(((topIndustryEmployees / current_total_employees) * 100).toFixed(1))
+        : 0;
+
+    // Talent structure: 普工+技工 vs total (from shortage breakdown)
+    let totalGeneral = 0, totalTech = 0, totalMgmt = 0;
+    latestData.forEach(r => {
+        totalGeneral += (r.shortage_general || 0);
+        totalTech += (r.shortage_tech || 0);
+        totalMgmt += (r.shortage_mgmt || 0);
+    });
+    const totalTalentDemand = totalGeneral + totalTech + totalMgmt;
+    const talentGeneralTechPct = totalTalentDemand > 0
+        ? parseFloat((((totalGeneral + totalTech) / totalTalentDemand) * 100).toFixed(0))
+        : 0;
+
+    // Industry growth rates (start month vs latest month per industry)
+    const industryStartMap = new Map<string, number>();
+    const industryEndMap = new Map<string, number>();
+    const startMonthData = yearData.filter(d => d.report_month === startDate);
+    startMonthData.forEach(r => {
+        const comp = Array.isArray(r.companies) ? r.companies[0] : r.companies;
+        const ind = comp?.industry || '其他';
+        industryStartMap.set(ind, (industryStartMap.get(ind) || 0) + (r.employees_total || 0));
+    });
+    latestData.forEach(r => {
+        const comp = Array.isArray(r.companies) ? r.companies[0] : r.companies;
+        const ind = comp?.industry || '其他';
+        industryEndMap.set(ind, (industryEndMap.get(ind) || 0) + (r.employees_total || 0));
+    });
+    const industryGrowthRates: { name: string; rate: number }[] = [];
+    industryEndMap.forEach((endVal, ind) => {
+        if (ind === '未知' || ind === '其他') return;
+        const startVal = industryStartMap.get(ind) || 0;
+        if (startVal > 0) {
+            const rate = parseFloat((((endVal - startVal) / startVal) * 100).toFixed(1));
+            industryGrowthRates.push({ name: ind, rate });
+        }
+    });
+    industryGrowthRates.sort((a, b) => b.rate - a.rate);
+
+    // Numeric rates for conclusion logic
+    const shortageRateNum = (current_total_employees + current_total_shortage) > 0
+        ? parseFloat(((current_total_shortage / (current_total_employees + current_total_shortage)) * 100).toFixed(1))
+        : 0;
+    const turnoverRateNum = current_total_employees > 0
+        ? parseFloat(((cumulative_resigned / current_total_employees) * 100).toFixed(1))
+        : 0;
+
+    // Growth trend descriptor
+    const growthTrend: 'up' | 'down' | 'stable' = growthRate > 1 ? 'up' : growthRate < -1 ? 'down' : 'stable';
 
     return {
         total_enterprises,
@@ -418,7 +501,19 @@ export async function getReportSummary(filters?: { industry?: string, town?: str
         shortage_rate,
         current_total_shortage,
         topIndustriesShare,
-        topTownsShare
+        topTownsShare,
+        // Data-driven fields
+        dataYear: targetYear,
+        topTowns,
+        topShortageIndustry,
+        topTurnoverIndustry,
+        shortageRateNum,
+        turnoverRateNum,
+        growthTrend,
+        topIndustryName,
+        topIndustrySharePct,
+        talentGeneralTechPct,
+        industryGrowthRates,
     };
 }
 

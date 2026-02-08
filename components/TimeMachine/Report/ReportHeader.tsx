@@ -1,12 +1,16 @@
 import React from 'react';
 
-export function ReportHeader() {
+interface ReportHeaderProps {
+    dataYear: string;
+}
+
+export function ReportHeader({ dataYear }: ReportHeaderProps) {
     return (
         <div data-pdf-section="cover">
             <header className="text-center mb-8 sm:mb-12 md:mb-16">
                 <div className="mb-6 sm:mb-8">
                     <h1 className="report-title text-2xl sm:text-3xl md:text-4xl mb-3 sm:mb-4">
-                        天门市2025年用工情况分析报告
+                        天门市{dataYear}年用工情况分析报告
                     </h1>
                     <div className="w-20 sm:w-24 md:w-32 h-1 mx-auto mb-3 sm:mb-4 bg-primary"></div>
                     <p className="text-base sm:text-lg text-gray-600">

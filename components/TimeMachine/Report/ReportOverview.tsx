@@ -9,6 +9,7 @@ interface ReportOverviewProps {
     netGrowth: number;
     growthRate: number;
     shortageRate: string;
+    dataYear: string;
 }
 
 // Government style colors
@@ -25,7 +26,8 @@ export function ReportOverview({
     totalNewHires,
     netGrowth,
     growthRate,
-    shortageRate
+    shortageRate,
+    dataYear
 }: ReportOverviewProps) {
     return (
         <section className="mb-8 print:mb-12">
@@ -43,10 +45,10 @@ export function ReportOverview({
             </div>
 
             <p className="leading-relaxed text-sm text-gray-700">
-                2025年，天门市重点工业企业用工市场总体保持稳健增长态势。
+                {dataYear}年，天门市重点工业企业用工市场总体保持{growthRate > 0 ? '稳健增长' : growthRate < 0 ? '调整收缩' : '平稳运行'}态势。
                 全年累计新招员工<strong>{totalNewHires.toLocaleString()}</strong>人，
                 净增长<strong>{netGrowth.toLocaleString()}</strong>人。
-                从数据来看，企业用工规模稳步扩大，显示出我市工业经济发展的良好韧性。
+                从数据来看，企业用工规模{growthRate > 0 ? '稳步扩大，显示出我市工业经济发展的良好韧性' : '有所调整，需关注企业用工需求变化'}。
             </p>
         </section>
     );
