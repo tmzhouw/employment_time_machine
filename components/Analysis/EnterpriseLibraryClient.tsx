@@ -92,10 +92,10 @@ export default function EnterpriseLibraryClient({ initialCompanies, filterOption
         : 0;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-3 md:space-y-6">
             {/* Page Header */}
             <div>
-                <h2 className="text-xl font-bold text-slate-900">企业库</h2>
+                <h2 className="text-lg md:text-xl font-bold text-slate-900">企业库</h2>
                 <p className="text-sm text-slate-600 mt-1">
                     全面的企业数据查询与分析工具
                 </p>
@@ -109,63 +109,63 @@ export default function EnterpriseLibraryClient({ initialCompanies, filterOption
             />
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 md:p-5">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-slate-600">企业数量</p>
-                            <p className="text-2xl font-bold text-slate-900 mt-1">
+                            <p className="text-xs md:text-sm text-slate-600">企业数量</p>
+                            <p className="text-xl md:text-2xl font-bold text-slate-900 mt-0.5">
                                 {totalCompanies}
                             </p>
-                            <p className="text-xs text-slate-500 mt-1">家</p>
+                            <p className="text-[10px] md:text-xs text-slate-500">家</p>
                         </div>
-                        <div className="p-3 bg-blue-50 rounded-lg">
-                            <Building2 className="w-6 h-6 text-blue-600" />
+                        <div className="p-2 md:p-3 bg-blue-50 rounded-lg">
+                            <Building2 className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 md:p-5">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-slate-600">总用工人数</p>
-                            <p className="text-2xl font-bold text-slate-900 mt-1">
+                            <p className="text-xs md:text-sm text-slate-600">总用工</p>
+                            <p className="text-xl md:text-2xl font-bold text-slate-900 mt-0.5">
                                 {totalEmployees.toLocaleString()}
                             </p>
-                            <p className="text-xs text-slate-500 mt-1">人</p>
+                            <p className="text-[10px] md:text-xs text-slate-500">人</p>
                         </div>
-                        <div className="p-3 bg-green-50 rounded-lg">
-                            <Users className="w-6 h-6 text-green-600" />
+                        <div className="p-2 md:p-3 bg-green-50 rounded-lg">
+                            <Users className="w-5 h-5 md:w-6 md:h-6 text-green-600" />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 md:p-5">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-slate-600">总缺工人数</p>
-                            <p className="text-2xl font-bold text-slate-900 mt-1">
+                            <p className="text-xs md:text-sm text-slate-600">总缺工</p>
+                            <p className="text-xl md:text-2xl font-bold text-slate-900 mt-0.5">
                                 {totalShortage.toLocaleString()}
                             </p>
-                            <p className="text-xs text-slate-500 mt-1">人</p>
+                            <p className="text-[10px] md:text-xs text-slate-500">人</p>
                         </div>
-                        <div className="p-3 bg-orange-50 rounded-lg">
-                            <AlertCircle className="w-6 h-6 text-orange-600" />
+                        <div className="p-2 md:p-3 bg-orange-50 rounded-lg">
+                            <AlertCircle className="w-5 h-5 md:w-6 md:h-6 text-orange-600" />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 md:p-5">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm text-slate-600">平均流失率</p>
-                            <p className="text-2xl font-bold text-slate-900 mt-1">
+                            <p className="text-xs md:text-sm text-slate-600">流失率</p>
+                            <p className="text-xl md:text-2xl font-bold text-slate-900 mt-0.5">
                                 {avgTurnover.toFixed(1)}%
                             </p>
-                            <p className="text-xs text-slate-500 mt-1">月均</p>
+                            <p className="text-[10px] md:text-xs text-slate-500">月均</p>
                         </div>
-                        <div className="p-3 bg-red-50 rounded-lg">
-                            <TrendingDown className="w-6 h-6 text-red-600" />
+                        <div className="p-2 md:p-3 bg-red-50 rounded-lg">
+                            <TrendingDown className="w-5 h-5 md:w-6 md:h-6 text-red-600" />
                         </div>
                     </div>
                 </div>

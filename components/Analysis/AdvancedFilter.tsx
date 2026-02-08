@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, X, ChevronDown } from 'lucide-react';
 
 interface AdvancedFilters {
@@ -21,6 +21,7 @@ const scales = ['全部', '< 100人', '100-500人', '> 500人'];
 const shortages = ['全部', '轻度 (<5%)', '中度 (5-15%)', '严重 (>15%)'];
 
 export default function AdvancedFilter({ onFilterChange, industryOptions, townOptions }: AdvancedFilterProps) {
+    const [isMobile, setIsMobile] = useState(false);
     const [isExpanded, setIsExpanded] = useState(true);
     const [filters, setFilters] = useState<AdvancedFilters>({
         industry: '全部',
@@ -30,7 +31,17 @@ export default function AdvancedFilter({ onFilterChange, industryOptions, townOp
         search: ''
     });
 
-    // Helper: Add '全部' to options
+    useEffect(() => {
+        const check = () => {
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            // Auto-collapse on mobile on initial render
+            if (mobile) setIsExpanded(false);
+        };
+        check();
+        // Only run check once, don't re-collapse on resize
+    }, []);
+
     const industryList = ['全部', ...industryOptions];
     const townList = ['全部', ...townOptions];
 
@@ -56,130 +67,144 @@ export default function AdvancedFilter({ onFilterChange, industryOptions, townOp
         ([key, value]) => key !== 'search' && value !== '全部'
     ) || filters.search.length > 0;
 
+    const activeCount = Object.entries(filters).filter(
+        ([key, value]) => key !== 'search' && value !== '全部'
+    ).length + (filters.search.length > 0 ? 1 : 0);
+
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full flex items-center justify-between p-3 md:p-4"
+            >
                 <div className="flex items-center gap-2">
-                    <Filter className="w-5 h-5 text-slate-600" />
-                    <h3 className="font-semibold text-slate-900">高级筛选</h3>
-                    {hasActiveFilters && (
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                            已筛选
+                    <Filter className="w-4 h-4 md:w-5 md:h-5 text-slate-600" />
+                    <h3 className="text-sm md:text-base font-semibold text-slate-900">筛选</h3>
+                    {activeCount > 0 && (
+                        <span className="text-[10px] md:text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">
+                            {activeCount}
                         </span>
                     )}
                 </div>
 
                 <div className="flex items-center gap-2">
                     {hasActiveFilters && (
-                        <button
-                            onClick={clearFilters}
-                            className="text-sm text-slate-600 hover:text-slate-900 flex items-center gap-1"
+                        <span
+                            onClick={(e) => { e.stopPropagation(); clearFilters(); }}
+                            className="text-xs text-slate-500 hover:text-red-600 flex items-center gap-0.5"
                         >
-                            <X className="w-4 h-4" />
+                            <X className="w-3 h-3" />
                             清空
-                        </button>
+                        </span>
                     )}
-                    <button
-                        onClick={() => setIsExpanded(!isExpanded)}
-                        className="p-1 hover:bg-slate-100 rounded"
-                    >
-                        <ChevronDown className={`w-5 h-5 text-slate-600 transition-transform ${isExpanded ? 'rotate-180' : ''
-                            }`} />
-                    </button>
+                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                 </div>
-            </div>
+            </button>
+
+            {/* Active filter tags (shown when collapsed) */}
+            {!isExpanded && hasActiveFilters && (
+                <div className="px-3 pb-2 flex flex-wrap gap-1.5">
+                    {filters.search && (
+                        <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                            搜索: {filters.search}
+                            <X className="w-3 h-3 cursor-pointer" onClick={() => updateFilter('search', '')} />
+                        </span>
+                    )}
+                    {filters.industry !== '全部' && (
+                        <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                            {filters.industry}
+                            <X className="w-3 h-3 cursor-pointer" onClick={() => updateFilter('industry', '全部')} />
+                        </span>
+                    )}
+                    {filters.town !== '全部' && (
+                        <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                            {filters.town}
+                            <X className="w-3 h-3 cursor-pointer" onClick={() => updateFilter('town', '全部')} />
+                        </span>
+                    )}
+                    {filters.scale !== '全部' && (
+                        <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                            {filters.scale}
+                            <X className="w-3 h-3 cursor-pointer" onClick={() => updateFilter('scale', '全部')} />
+                        </span>
+                    )}
+                    {filters.shortage !== '全部' && (
+                        <span className="inline-flex items-center gap-1 text-[10px] md:text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                            {filters.shortage}
+                            <X className="w-3 h-3 cursor-pointer" onClick={() => updateFilter('shortage', '全部')} />
+                        </span>
+                    )}
+                </div>
+            )}
 
             {/* Filter Options */}
             {isExpanded && (
-                <div className="p-4 space-y-4">
+                <div className="px-3 pb-3 md:p-4 space-y-3 md:space-y-4 border-t border-slate-100">
                     {/* Search */}
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                            企业搜索
-                        </label>
+                    <div className="pt-3 md:pt-0">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
                                 type="text"
                                 value={filters.search}
                                 onChange={(e) => updateFilter('search', e.target.value)}
-                                placeholder="输入企业名称..."
-                                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-white placeholder-slate-400"
+                                placeholder="搜索企业名称..."
+                                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-slate-50 placeholder-slate-400"
                             />
                         </div>
                     </div>
 
-                    {/* Filter Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {/* Industry */}
+                    {/* Filter Grid — 2 columns on mobile, 4 on desktop */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">
-                                行业类型
-                            </label>
+                            <label className="block text-[10px] md:text-xs font-medium text-slate-500 mb-1">行业</label>
                             <select
                                 value={filters.industry}
                                 onChange={(e) => updateFilter('industry', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-white"
+                                className="w-full px-2 md:px-3 py-1.5 md:py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-slate-50"
                             >
                                 {industryList.map((industry) => (
-                                    <option key={industry} value={industry}>
-                                        {industry}
-                                    </option>
+                                    <option key={industry} value={industry}>{industry}</option>
                                 ))}
                             </select>
                         </div>
 
-                        {/* Town */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">
-                                所在乡镇
-                            </label>
+                            <label className="block text-[10px] md:text-xs font-medium text-slate-500 mb-1">乡镇</label>
                             <select
                                 value={filters.town}
                                 onChange={(e) => updateFilter('town', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-white"
+                                className="w-full px-2 md:px-3 py-1.5 md:py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-slate-50"
                             >
                                 {townList.map((town) => (
-                                    <option key={town} value={town}>
-                                        {town}
-                                    </option>
+                                    <option key={town} value={town}>{town}</option>
                                 ))}
                             </select>
                         </div>
 
-                        {/* Scale */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">
-                                企业规模
-                            </label>
+                            <label className="block text-[10px] md:text-xs font-medium text-slate-500 mb-1">规模</label>
                             <select
                                 value={filters.scale}
                                 onChange={(e) => updateFilter('scale', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-white"
+                                className="w-full px-2 md:px-3 py-1.5 md:py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-slate-50"
                             >
                                 {scales.map((scale) => (
-                                    <option key={scale} value={scale}>
-                                        {scale}
-                                    </option>
+                                    <option key={scale} value={scale}>{scale}</option>
                                 ))}
                             </select>
                         </div>
 
-                        {/* Shortage */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">
-                                缺工程度
-                            </label>
+                            <label className="block text-[10px] md:text-xs font-medium text-slate-500 mb-1">缺工</label>
                             <select
                                 value={filters.shortage}
                                 onChange={(e) => updateFilter('shortage', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-white"
+                                className="w-full px-2 md:px-3 py-1.5 md:py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-slate-900 bg-slate-50"
                             >
                                 {shortages.map((shortage) => (
-                                    <option key={shortage} value={shortage}>
-                                        {shortage}
-                                    </option>
+                                    <option key={shortage} value={shortage}>{shortage}</option>
                                 ))}
                             </select>
                         </div>
