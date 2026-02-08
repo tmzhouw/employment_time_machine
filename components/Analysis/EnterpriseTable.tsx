@@ -174,10 +174,10 @@ export default function EnterpriseTable({ companies }: EnterpriseTableProps) {
 
             {/* Table */}
             <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[700px]">
                     <thead className="bg-slate-50 border-b border-slate-200">
                         <tr>
-                            <th className="px-6 py-3 text-left">
+                            <th className="px-3 md:px-6 py-3 text-left">
                                 <input
                                     type="checkbox"
                                     checked={selectedCompanies.size === companies.length && companies.length > 0}
@@ -185,25 +185,25 @@ export default function EnterpriseTable({ companies }: EnterpriseTableProps) {
                                     className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                                 />
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                            <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                                 <SortButton column="name" label="企业名称" />
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                            <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                                 <SortButton column="industry" label="行业" />
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                            <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                                 <SortButton column="town" label="乡镇" />
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                            <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                                 <SortButton column="employees" label="在岗人数" />
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                            <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                                 <SortButton column="shortage" label="缺工人数" />
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                            <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                                 <SortButton column="turnoverRate" label="流失率" />
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                            <th className="px-3 md:px-6 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                                 操作
                             </th>
                         </tr>
@@ -219,7 +219,7 @@ export default function EnterpriseTable({ companies }: EnterpriseTableProps) {
                                     key={company.name}
                                     className="hover:bg-slate-50 transition-colors"
                                 >
-                                    <td className="px-6 py-4">
+                                    <td className="px-3 md:px-6 py-3 md:py-4">
                                         <input
                                             type="checkbox"
                                             checked={selectedCompanies.has(company.name)}
@@ -227,7 +227,7 @@ export default function EnterpriseTable({ companies }: EnterpriseTableProps) {
                                             className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                                         />
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-3 md:px-6 py-3 md:py-4">
                                         <button
                                             onClick={() => handleViewDetail(company.name)}
                                             className="font-medium text-blue-600 hover:text-blue-800 hover:underline text-left"
@@ -235,16 +235,16 @@ export default function EnterpriseTable({ companies }: EnterpriseTableProps) {
                                             {company.name}
                                         </button>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-slate-700">
+                                    <td className="px-3 md:px-6 py-3 md:py-4 text-sm text-slate-700">
                                         {company.industry}
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-slate-700">
+                                    <td className="px-3 md:px-6 py-3 md:py-4 text-sm text-slate-700">
                                         {company.town}
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-slate-900 font-medium">
+                                    <td className="px-3 md:px-6 py-3 md:py-4 text-sm text-slate-900 font-medium">
                                         {company.employees.toLocaleString()}
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-3 md:px-6 py-3 md:py-4">
                                         <div className="flex items-center gap-2">
                                             <span className={`text-sm font-medium ${company.shortage > 50 ? 'text-red-600' :
                                                 company.shortage > 20 ? 'text-orange-600' :
@@ -257,7 +257,7 @@ export default function EnterpriseTable({ companies }: EnterpriseTableProps) {
                                             </span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-3 md:px-6 py-3 md:py-4">
                                         <span className={`text-sm font-medium ${company.turnoverRate > 15 ? 'text-red-600' :
                                             company.turnoverRate > 10 ? 'text-orange-600' :
                                                 'text-green-600'
@@ -265,7 +265,7 @@ export default function EnterpriseTable({ companies }: EnterpriseTableProps) {
                                             {company.turnoverRate.toFixed(1)}%
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-3 md:px-6 py-3 md:py-4">
                                         <button
                                             onClick={() => handleViewDetail(company.name)}
                                             className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"

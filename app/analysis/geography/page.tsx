@@ -25,20 +25,20 @@ export default async function GeographyAnalysisPage() {
     const maxGrowthTown = sortByCompanies[0]; // Proxy for density/activity
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-4 md:space-y-8">
             {/* Page Header */}
             <div>
-                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
-                    <MapPin className="w-7 h-7 text-amber-500" />
+                <h1 className="text-xl md:text-2xl font-bold text-slate-900 flex items-center gap-2 md:gap-3">
+                    <MapPin className="w-5 h-5 md:w-7 md:h-7 text-amber-500" />
                     地域分析
                 </h1>
-                <p className="text-sm text-slate-600 mt-1">
+                <p className="text-xs md:text-sm text-slate-600 mt-1">
                     全景透视各乡镇用工分布与缺口强度
                 </p>
             </div>
 
             {/* 1. Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
                 <SummaryCard
                     title="全区域在岗总数"
                     value={totalEmployees.toLocaleString()}
@@ -72,7 +72,7 @@ export default async function GeographyAnalysisPage() {
             </div>
 
             {/* 2. Main Visuals: Map + Ranking */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
                 {/* Left: Treemap (Simulated Map) - 2/3 width */}
                 <div className="lg:col-span-2 space-y-4">
                     <Suspense fallback={<div className="h-[500px] bg-white rounded-xl animate-pulse" />}>
@@ -113,14 +113,14 @@ export default async function GeographyAnalysisPage() {
 
 function SummaryCard({ title, value, subValue, icon: Icon, color, bg }: any) {
     return (
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-start justify-between">
+        <div className="bg-white p-3 md:p-5 rounded-xl shadow-sm border border-slate-100 flex items-start justify-between">
             <div>
                 <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-                <h3 className="text-2xl font-bold text-slate-900">{value}</h3>
+                <h3 className="text-lg md:text-2xl font-bold text-slate-900">{value}</h3>
                 {subValue && <p className={`text-xs font-medium mt-1 ${color}`}>{subValue}</p>}
             </div>
-            <div className={`p-3 rounded-lg ${bg}`}>
-                <Icon className={`w-5 h-5 ${color}`} />
+            <div className={`p-2 md:p-3 rounded-lg ${bg}`}>
+                <Icon className={`w-4 h-4 md:w-5 md:h-5 ${color}`} />
             </div>
         </div>
     );

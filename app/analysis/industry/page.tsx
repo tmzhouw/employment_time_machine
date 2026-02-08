@@ -21,20 +21,20 @@ export default async function IndustryAnalysisPage() {
     const highestTurnover = [...industryStats].sort((a, b) => b.turnoverRate - a.turnoverRate)[0];
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-4 md:space-y-8">
             {/* Page Header */}
             <div>
-                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
-                    <Factory className="w-7 h-7 text-indigo-500" />
+                <h1 className="text-xl md:text-2xl font-bold text-slate-900 flex items-center gap-2 md:gap-3">
+                    <Factory className="w-5 h-5 md:w-7 md:h-7 text-indigo-500" />
                     行业洞察
                 </h1>
-                <p className="text-sm text-slate-600 mt-1">
+                <p className="text-xs md:text-sm text-slate-600 mt-1">
                     全市各行业用工健康度与结构分析
                 </p>
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-2 md:gap-4">
                 <SummaryCard
                     title="监测行业数"
                     value={totalIndustries.toString()}
@@ -77,7 +77,7 @@ export default async function IndustryAnalysisPage() {
             </div>
 
             {/* Main Visuals: Treemap + Ranking */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
                 <div className="lg:col-span-2">
                     <Suspense fallback={<div className="h-[420px] bg-white rounded-xl animate-pulse" />}>
                         <IndustryTrends data={industryStats} />
@@ -110,10 +110,10 @@ export default async function IndustryAnalysisPage() {
 
 function SummaryCard({ title, value, subValue, icon: Icon, color, bg }: any) {
     return (
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-start justify-between">
+        <div className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-slate-100 flex items-start justify-between">
             <div>
                 <p className="text-xs font-medium text-slate-500 mb-1">{title}</p>
-                <h3 className="text-xl font-bold text-slate-900">{value}</h3>
+                <h3 className="text-base md:text-xl font-bold text-slate-900">{value}</h3>
                 {subValue && <p className={`text-xs font-medium mt-0.5 ${color}`}>{subValue}</p>}
             </div>
             <div className={`p-2.5 rounded-lg ${bg}`}>

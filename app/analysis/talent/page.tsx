@@ -72,16 +72,16 @@ export default function TalentAnalysisPage() {
         }));
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="space-y-4 md:space-y-6 animate-in fade-in duration-500">
             <div>
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">全市人才需求结构分析</h1>
-                <p className="text-slate-500 mt-1">
+                <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">全市人才需求结构分析</h1>
+                <p className="text-xs md:text-base text-slate-500 mt-1">
                     基于企业填报的紧缺工种数据，分析结构性缺工特征。
                 </p>
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
                 <MetricCard
                     title="紧缺总人数"
                     value={totalStructure.shortage}
@@ -115,10 +115,10 @@ export default function TalentAnalysisPage() {
                 />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                 {/* Pie Chart */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                    <h3 className="text-lg font-bold text-slate-900 mb-4">岗位类型分布</h3>
+                <div className="bg-white p-3 md:p-6 rounded-xl shadow-sm border border-slate-100">
+                    <h3 className="text-base md:text-lg font-bold text-slate-900 mb-2 md:mb-4">岗位类型分布</h3>
                     <div className="h-[300px] flex items-center justify-center">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -143,8 +143,8 @@ export default function TalentAnalysisPage() {
                 </div>
 
                 {/* Stacked Bar Chart */}
-                <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                    <h3 className="text-lg font-bold text-slate-900 mb-4">重点行业需求结构 Top 8</h3>
+                <div className="lg:col-span-2 bg-white p-3 md:p-6 rounded-xl shadow-sm border border-slate-100">
+                    <h3 className="text-base md:text-lg font-bold text-slate-900 mb-2 md:mb-4">重点行业需求结构 Top 8</h3>
                     <div className="h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={barData} layout="vertical" margin={{ left: 20, right: 20, bottom: 20 }}>
@@ -164,8 +164,8 @@ export default function TalentAnalysisPage() {
 
             {/* Detailed Table */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="p-6 border-b border-slate-100">
-                    <h3 className="text-lg font-bold text-slate-900">分行业需求明细表</h3>
+                <div className="p-3 md:p-6 border-b border-slate-100">
+                    <h3 className="text-base md:text-lg font-bold text-slate-900">分行业需求明细表</h3>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
@@ -220,16 +220,16 @@ export default function TalentAnalysisPage() {
 
 function MetricCard({ title, value, sub, icon: Icon, color, bg }: any) {
     return (
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+        <div className="bg-white p-3 md:p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
             <div>
-                <p className="text-slate-500 text-sm font-medium mb-1">{title}</p>
+                <p className="text-slate-500 text-xs md:text-sm font-medium mb-0.5 md:mb-1">{title}</p>
                 <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-slate-900">{value.toLocaleString()}</span>
+                    <span className="text-lg md:text-2xl font-bold text-slate-900">{value.toLocaleString()}</span>
                     {sub && <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${bg} ${color}`}>{sub}</span>}
                 </div>
             </div>
-            <div className={`p-3 rounded-full ${bg}`}>
-                <Icon className={`w-6 h-6 ${color}`} />
+            <div className={`p-2 md:p-3 rounded-full ${bg}`}>
+                <Icon className={`w-4 h-4 md:w-6 md:h-6 ${color}`} />
             </div>
         </div>
     );

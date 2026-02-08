@@ -23,14 +23,14 @@ export default async function TrendsAnalysisPage() {
     ]);
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-4 md:space-y-8">
             {/* Page Header */}
             <div>
-                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
-                    <TrendingUp className="w-7 h-7 text-amber-500" />
+                <h1 className="text-xl md:text-2xl font-bold text-slate-900 flex items-center gap-2 md:gap-3">
+                    <TrendingUp className="w-5 h-5 md:w-7 md:h-7 text-amber-500" />
                     趋势分析
                 </h1>
-                <p className="text-sm text-slate-600 mt-1">
+                <p className="text-xs md:text-sm text-slate-600 mt-1">
                     时间维度深度分析 · 多年用工趋势对比
                 </p>
             </div>
@@ -53,16 +53,16 @@ export default async function TrendsAnalysisPage() {
             </section>
 
             {/* 3. Temporal Insights (Phase 2.1) */}
-            <section className="pt-8 border-t border-slate-200">
+            <section className="pt-4 md:pt-8 border-t border-slate-200">
                 <div className="flex items-center gap-2 mb-6">
                     <Clock className="w-6 h-6 text-blue-600" />
                     <div>
-                        <h2 className="text-xl font-bold text-slate-900">时间维度深度洞察</h2>
+                        <h2 className="text-base md:text-xl font-bold text-slate-900">时间维度深度洞察</h2>
                         <p className="text-slate-500 text-sm">解析季度效能与季节性规律</p>
                     </div>
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-4 md:space-y-8">
                     {/* Quarterly Analysis */}
                     <Suspense fallback={<div className="h-[400px] bg-slate-100 rounded-xl animate-pulse" />}>
                         <QuarterlyPerformanceChart data={quarterlyData} />
