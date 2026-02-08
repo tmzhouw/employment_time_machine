@@ -66,18 +66,18 @@ export default async function DashboardPage(props: PageProps) {
                 {/* 1. Leader Cockpit Metrics */}
                 <section>
                     <MainSectionHeader number="一" title="全市用工概览 (2025全年)" />
-                    <div className="mb-6 flex items-center justify-between">
+                    <div className="mb-4 md:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
                         <div>
-                            <p className="text-slate-500 text-sm mt-1">数据来源：全市重点企业直报数据 (已校准)</p>
+                            <p className="text-slate-500 text-xs md:text-sm mt-1">数据来源：全市重点企业直报数据 (已校准)</p>
                         </div>
-                        <div className="text-right">
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                        <div className="text-left sm:text-right">
+                            <span className="inline-flex items-center px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-medium bg-emerald-100 text-emerald-800">
                                 数据已更新至 12月
                             </span>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
                         <MetricCard
                             title="调查企业数"
                             value={summary.total_enterprises}
@@ -136,15 +136,15 @@ export default async function DashboardPage(props: PageProps) {
                     <div className="flex flex-col gap-6 mt-6">
 
                         {/* Top: Monthly Trend (Full Width) */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                            <div className="mb-4">
-                                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                    <TrendingUp className="text-blue-600" size={20} />
+                        <div className="bg-white p-3 md:p-6 rounded-xl shadow-sm border border-gray-100">
+                            <div className="mb-2 md:mb-4">
+                                <h2 className="text-sm md:text-lg font-bold text-gray-800 flex items-center gap-2">
+                                    <TrendingUp className="text-blue-600" size={18} />
                                     用工人数 vs 缺工人数 剪刀差分析
                                 </h2>
-                                <p className="text-sm text-gray-400 ml-7">观察“在岗人数”与“缺工人数”的变化趋势，识别结构性缺工风险。</p>
+                                <p className="text-xs md:text-sm text-gray-400 ml-6 md:ml-7">观察"在岗人数"与"缺工人数"的变化趋势，识别结构性缺工风险。</p>
                             </div>
-                            <div className="h-80">
+                            <div className="h-60 md:h-80">
                                 <DualAxisTrendChart data={trends} />
                             </div>
                         </div>
@@ -152,17 +152,17 @@ export default async function DashboardPage(props: PageProps) {
                         {/* Bottom: Split Distributions */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Industry Dist */}
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-80">
-                                <HeaderTitle title="重点行业用工分布 TOP 5" icon={<Briefcase size={18} className="text-blue-600" />} />
-                                <div className="mt-4 h-60">
+                            <div className="bg-white p-3 md:p-6 rounded-xl shadow-sm border border-gray-100 min-h-60 md:min-h-80">
+                                <HeaderTitle title="重点行业用工分布 TOP 5" icon={<Briefcase size={18} className="text-blue-600" />} small />
+                                <div className="mt-2 md:mt-4 h-48 md:h-60">
                                     <BarChartSection data={industryDist.slice(0, 5)} color="#3b82f6" />
                                 </div>
                             </div>
 
                             {/* Town Dist */}
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-80">
-                                <HeaderTitle title="重点乡镇用工分布 TOP 5" icon={<MapPin size={18} className="text-indigo-600" />} />
-                                <div className="mt-4 h-60">
+                            <div className="bg-white p-3 md:p-6 rounded-xl shadow-sm border border-gray-100 min-h-60 md:min-h-80">
+                                <HeaderTitle title="重点乡镇用工分布 TOP 5" icon={<MapPin size={18} className="text-indigo-600" />} small />
+                                <div className="mt-2 md:mt-4 h-48 md:h-60">
                                     <BarChartSection data={regionalDist.slice(0, 5)} color="#6366f1" />
                                 </div>
                             </div>
@@ -179,7 +179,7 @@ export default async function DashboardPage(props: PageProps) {
                         {/* Red List: Shortage */}
 
                         {/* List 1 (Left): Shortage (Red) */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-rose-600 flex flex-col min-h-96">
+                        <div className="bg-white p-3 md:p-6 rounded-xl shadow-sm border-l-4 border-rose-600 flex flex-col min-h-fit md:min-h-96">
                             <HeaderTitle title="重点缺工“红名单”" icon={<AlertCircle size={18} className="text-rose-600" />} />
                             <div className="mt-4 flex-1 flex flex-col gap-3">
                                 {topShortage.map((item: any, idx: number) => (
@@ -198,7 +198,7 @@ export default async function DashboardPage(props: PageProps) {
                         </div>
 
                         {/* List 2 (Center): Personnel Flow Warning (Orange) - Merged */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-orange-500 flex flex-col min-h-96">
+                        <div className="bg-white p-3 md:p-6 rounded-xl shadow-sm border-l-4 border-orange-500 flex flex-col min-h-fit md:min-h-96">
                             <HeaderTitle title="人员流动“预警榜”" icon={<AlertTriangle size={18} className="text-orange-500" />} />
                             <div className="mt-4 flex-1 flex flex-col gap-3">
                                 {topTurnover.map((item: any, idx: number) => (
@@ -214,7 +214,7 @@ export default async function DashboardPage(props: PageProps) {
                                                 <Link
                                                     href={`?company=${encodeURIComponent(item.name)}`}
                                                     scroll={false}
-                                                    className="text-sm font-medium text-gray-900 line-clamp-1 w-24 md:w-32 hover:text-orange-600 hover:underline cursor-pointer"
+                                                    className="text-sm font-medium text-gray-900 line-clamp-1 w-36 md:w-44 hover:text-orange-600 hover:underline cursor-pointer"
                                                     title={item.name}
                                                 >
                                                     {item.name}
@@ -232,7 +232,7 @@ export default async function DashboardPage(props: PageProps) {
                         </div>
 
                         {/* List 3 (Right): Growth Model (Cyan) */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border-l-4 border-cyan-600 flex flex-col min-h-96">
+                        <div className="bg-white p-3 md:p-6 rounded-xl shadow-sm border-l-4 border-cyan-600 flex flex-col min-h-fit md:min-h-96">
                             <HeaderTitle title="稳定增长“模范榜”" icon={<TrendingUp size={18} className="text-cyan-600" />} />
                             <div className="mt-4 flex-1 flex flex-col gap-3">
                                 {topGrowth.map((item: any, idx: number) => (
@@ -248,7 +248,7 @@ export default async function DashboardPage(props: PageProps) {
                                                 <Link
                                                     href={`?company=${encodeURIComponent(item.name)}`}
                                                     scroll={false}
-                                                    className="text-sm font-medium text-gray-900 line-clamp-1 w-24 md:w-32 hover:text-cyan-600 hover:underline cursor-pointer"
+                                                    className="text-sm font-medium text-gray-900 line-clamp-1 w-36 md:w-44 hover:text-cyan-600 hover:underline cursor-pointer"
                                                     title={item.name}
                                                 >
                                                     {item.name}
@@ -277,11 +277,11 @@ export default async function DashboardPage(props: PageProps) {
 
 function MainSectionHeader({ number, title }: { number: string, title: string }) {
     return (
-        <div className="flex items-center gap-3 mb-2">
-            <div className="bg-blue-900 text-white font-bold px-3 py-1 rounded text-lg font-serif">
+        <div className="flex items-center gap-2 md:gap-3 mb-2">
+            <div className="bg-blue-900 text-white font-bold px-2 md:px-3 py-0.5 md:py-1 rounded text-sm md:text-lg font-serif">
                 {number}
             </div>
-            <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+            <h2 className="text-lg md:text-2xl font-bold text-gray-800">{title}</h2>
         </div>
     );
 }
