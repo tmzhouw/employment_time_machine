@@ -152,12 +152,12 @@ export function MultiYearTrendChart({ data }: MultiYearTrendChartProps) {
 
             {/* Footer Stats */}
             <div className="mt-3 md:mt-6 pt-3 md:pt-6 border-t border-slate-200">
-                <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm font-medium text-slate-500">
+                <div className="flex items-center justify-between mb-2 md:mb-4">
+                    <span className="text-xs md:text-sm font-medium text-slate-500">
                         截至 {data[data.length - 1]?.monthLabel || '当前'}
                     </span>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
                     {(['employees', 'shortage', 'recruited', 'resigned'] as MetricType[]).map((metric) => {
                         const latestData = data[data.length - 1];
                         const latestValue = latestData?.[metric] || 0;
@@ -171,20 +171,19 @@ export function MultiYearTrendChart({ data }: MultiYearTrendChartProps) {
                                 .reduce((sum, d) => sum + (d[metric] || 0), 0);
 
                             return (
-                                <div key={metric} className="text-center">
-                                    <p className="text-xs text-slate-500 mb-1">{metricConfig.label}</p>
-                                    <p className="text-lg md:text-2xl font-bold text-slate-900">
+                                <div key={metric} className="bg-slate-50 rounded-xl p-2.5 md:p-4 text-center">
+                                    <p className="text-[10px] md:text-xs text-slate-500 mb-0.5 md:mb-1">{metricConfig.label}</p>
+                                    <p className="text-base md:text-2xl font-bold text-slate-900">
                                         {latestValue.toLocaleString()}
                                     </p>
-                                    <p className="text-xs text-slate-400 mt-1">
-                                        本年累计: {ytdTotal.toLocaleString()}
+                                    <p className="text-[10px] md:text-xs text-slate-400 mt-0.5 md:mt-1">
+                                        累计 {ytdTotal.toLocaleString()}
                                     </p>
                                 </div>
                             );
                         }
 
                         // Logic for Employees/Shortage: Show Snapshot + Growth (YTD)
-                        // Find the first data point of the current year
                         const currentYear = latestData?.month?.substring(0, 4);
                         const startOfYearData = data.find(d => d.month.startsWith(currentYear)) || data[0];
                         const startValue = startOfYearData?.[metric] || 0;
@@ -193,14 +192,14 @@ export function MultiYearTrendChart({ data }: MultiYearTrendChartProps) {
                         const changePercent = startValue > 0 ? (change / startValue) * 100 : 0;
 
                         return (
-                            <div key={metric} className="text-center">
-                                <p className="text-xs text-slate-500 mb-1">{metricConfig.label}</p>
-                                <p className="text-lg md:text-2xl font-bold text-slate-900">
+                            <div key={metric} className="bg-slate-50 rounded-xl p-2.5 md:p-4 text-center">
+                                <p className="text-[10px] md:text-xs text-slate-500 mb-0.5 md:mb-1">{metricConfig.label}</p>
+                                <p className="text-base md:text-2xl font-bold text-slate-900">
                                     {latestValue.toLocaleString()}
                                 </p>
-                                <p className={`text-xs mt-1 flex items-center justify-center gap-1 ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <p className={`text-[10px] md:text-xs mt-0.5 md:mt-1 flex items-center justify-center gap-0.5 ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                     <span>{change >= 0 ? '+' : ''}{changePercent.toFixed(1)}%</span>
-                                    <span className="text-slate-400 scale-90">(较年初)</span>
+                                    <span className="text-slate-400">(较年初)</span>
                                 </p>
                             </div>
                         );
