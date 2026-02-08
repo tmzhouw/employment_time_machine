@@ -228,15 +228,17 @@ export default function EnterpriseTable({ companies }: EnterpriseTableProps) {
                                 <div className="grid grid-cols-3 gap-2 pl-7">
                                     <div className="bg-slate-50 rounded p-2 text-center">
                                         <div className="text-[10px] text-slate-400 mb-0.5">在岗职工</div>
-                                        <div className="text-sm font-bold text-slate-900">{company.employees.toLocaleString()}</div>
+                                        <div className="text-sm font-bold text-slate-900">{(company.employees || 0).toLocaleString()}</div>
                                     </div>
                                     <div className="bg-slate-50 rounded p-2 text-center">
                                         <div className="text-[10px] text-slate-400 mb-0.5">缺工人数</div>
-                                        <div className={`text-sm font-bold ${company.shortage > 0 ? 'text-amber-600' : 'text-slate-900'}`}>{company.shortage}</div>
+                                        <div className={`text-sm font-bold ${company.shortage > 0 ? 'text-amber-600' : 'text-slate-900'}`}>{company.shortage || 0}</div>
                                     </div>
                                     <div className="bg-slate-50 rounded p-2 text-center">
                                         <div className="text-[10px] text-slate-400 mb-0.5">流失率</div>
-                                        <div className={`text-sm font-bold ${company.turnoverRate > 10 ? 'text-rose-600' : 'text-slate-900'}`}>{company.turnoverRate.toFixed(1)}%</div>
+                                        <div className={`text-sm font-bold ${company.turnoverRate > 10 ? 'text-rose-600' : 'text-slate-900'}`}>
+                                            {!isNaN(company.turnoverRate) ? company.turnoverRate.toFixed(1) : '0.0'}%
+                                        </div>
                                     </div>
                                 </div>
                             </div>

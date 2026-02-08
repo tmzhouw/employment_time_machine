@@ -15,12 +15,14 @@ interface Props {
 }
 
 export function SeasonalAnalysis({ data }: Props) {
-    // Determine peak months
-    const maxRecruited = Math.max(...data.map(d => d.avgRecruited));
-    const maxResigned = Math.max(...data.map(d => d.avgResigned));
+    // Determine peak months with safety checks
+    const validData = data?.filter(d => !isNaN(d.avgRecruited) && !isNaN(d.avgResigned)) || [];
 
-    const peakRecruitMonth = data.find(d => d.avgRecruited === maxRecruited)?.month;
-    const peakResignMonth = data.find(d => d.avgResigned === maxResigned)?.month;
+    const maxRecruited = validData.length > 0 ? Math.max(...validData.map(d => d.avgRecruited)) : 0;
+    const maxResigned = validData.length > 0 ? Math.max(...validData.map(d => d.avgResigned)) : 0;
+
+    const peakRecruitMonth = validData.find(d => d.avgRecruited === maxRecruited)?.month;
+    const peakResignMonth = validData.find(d => d.avgResigned === maxResigned)?.month;
 
     // Prepare chart data with labels
     const chartData = data.map(d => ({
@@ -85,7 +87,7 @@ export function SeasonalAnalysis({ data }: Props) {
                     title="招聘黄金期"
                     icon={<TrendingUp className="w-5 h-5 text-emerald-600" />}
                     theme="emerald"
-                    highlight={`${peakRecruitMonth}月`}
+                    highlight={peakRecruitMonth ? `${peakRecruitMonth}月` : undefined}
                     description={`平均招工达 ${maxRecruited.toLocaleString()} 人，是全年招聘最活跃的窗口期。`}
                 />
 
@@ -93,7 +95,7 @@ export function SeasonalAnalysis({ data }: Props) {
                     title="流失风险期"
                     icon={<AlertTriangle className="w-5 h-5 text-rose-600" />}
                     theme="rose"
-                    highlight={`${peakResignMonth}月`}
+                    highlight={peakResignMonth ? `${peakResignMonth}月` : undefined}
                     description="人员流失最为严重，建议提前1个月启动储备招聘或留人预案。"
                 />
 
