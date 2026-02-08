@@ -531,13 +531,15 @@ export async function getIndustryDistribution(filters?: { industry?: string, tow
     const latestMonth = filteredData[0].report_month;
     const currentData = filteredData.filter(d => d.report_month === latestMonth);
 
-    const industryStats = new Map();
+    const industryStats = new Map<string, { value: number; shortage: number }>();
 
     currentData.forEach((row: any) => {
         const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
         const industry = comp?.industry || '其他';
-        const current = industryStats.get(industry) || 0;
-        industryStats.set(industry, current + (row.employees_total || 0));
+        const current = industryStats.get(industry) || { value: 0, shortage: 0 };
+        current.value += (row.employees_total || 0);
+        current.shortage += (row.shortage_total || 0);
+        industryStats.set(industry, current);
     });
 
     // Custom sort order: One Major -> Two New -> Three Support -> Commerce -> Other
@@ -558,7 +560,7 @@ export async function getIndustryDistribution(filters?: { industry?: string, tow
     };
 
     return Array.from(industryStats.entries())
-        .map(([name, value]) => ({ name, value }))
+        .map(([name, stats]) => ({ name, value: stats.value, shortage: stats.shortage }))
         .sort((a, b) => {
             const rankA = getRank(a.name);
             const rankB = getRank(b.name);
@@ -578,21 +580,21 @@ export async function getRegionalDistribution(filters?: { industry?: string, tow
     const latestMonth = filteredData[0].report_month;
     const currentData = filteredData.filter(d => d.report_month === latestMonth);
 
-    const townTotals = new Map<string, number>();
+    const townTotals = new Map<string, { value: number; shortage: number }>();
 
     currentData.forEach((row: any) => {
         const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
         const town = comp?.town || '未知';
-        const currentVal = townTotals.get(town) || 0;
-        townTotals.set(town, currentVal + (row.employees_total || 0));
+        const current = townTotals.get(town) || { value: 0, shortage: 0 };
+        current.value += (row.employees_total || 0);
+        current.shortage += (row.shortage_total || 0);
+        townTotals.set(town, current);
     });
 
     // Aggregate Top 10 towns, rest into "其他乡镇"
     const sortedAllTowns = Array.from(townTotals.entries())
-        .map(([name, value]) => ({ name, value }))
+        .map(([name, stats]) => ({ name, value: stats.value, shortage: stats.shortage }))
         .sort((a, b) => b.value - a.value);
-
-    console.log('[DEBUG] All Towns Found:', sortedAllTowns.map(t => `${t.name} (${t.value})`));
 
     const top10 = sortedAllTowns.slice(0, 10);
     const others = sortedAllTowns.slice(10);
@@ -601,7 +603,8 @@ export async function getRegionalDistribution(filters?: { industry?: string, tow
 
     if (others.length > 0) {
         const otherTotal = others.reduce((sum, item) => sum + item.value, 0);
-        result.push({ name: '其他乡镇', value: otherTotal });
+        const otherShortage = others.reduce((sum, item) => sum + item.shortage, 0);
+        result.push({ name: '其他乡镇', value: otherTotal, shortage: otherShortage });
     }
 
     return result;

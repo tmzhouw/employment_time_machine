@@ -153,17 +153,17 @@ export default async function DashboardPage(props: PageProps) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Industry Dist */}
                             <div className="bg-white p-3 md:p-6 rounded-xl shadow-sm border border-gray-100 min-h-60 md:min-h-80">
-                                <HeaderTitle title="重点行业用工分布 TOP 5" icon={<Briefcase size={18} className="text-blue-600" />} small />
+                                <HeaderTitle title="重点行业用工缺工分布 TOP 5" icon={<Briefcase size={18} className="text-blue-600" />} small />
                                 <div className="mt-2 md:mt-4 h-48 md:h-60">
-                                    <BarChartSection data={industryDist.slice(0, 5)} color="#3b82f6" />
+                                    <BarChartSection data={industryDist.slice(0, 5)} color="#3b82f6" shortageColor="#f97316" showShortage />
                                 </div>
                             </div>
 
                             {/* Town Dist */}
                             <div className="bg-white p-3 md:p-6 rounded-xl shadow-sm border border-gray-100 min-h-60 md:min-h-80">
-                                <HeaderTitle title="重点乡镇用工分布 TOP 5" icon={<MapPin size={18} className="text-indigo-600" />} small />
+                                <HeaderTitle title="重点乡镇用工缺工分布 TOP 5" icon={<MapPin size={18} className="text-indigo-600" />} small />
                                 <div className="mt-2 md:mt-4 h-48 md:h-60">
-                                    <BarChartSection data={regionalDist.slice(0, 5)} color="#6366f1" />
+                                    <BarChartSection data={regionalDist.slice(0, 5)} color="#6366f1" shortageColor="#f97316" showShortage />
                                 </div>
                             </div>
                         </div>
