@@ -172,8 +172,81 @@ export default function EnterpriseTable({ companies }: EnterpriseTableProps) {
                 </div>
             )}
 
-            {/* Table */}
-            <div className="overflow-x-auto">
+            {/* Mobile Card View */}
+            <div className="md:hidden">
+                <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={selectedCompanies.size === companies.length && companies.length > 0}
+                            onChange={toggleSelectAll}
+                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-slate-600">全选 ({companies.length})</span>
+                    </div>
+                    {/* Simple Mobile Sort (Cycle through key metrics) */}
+                    <button
+                        onClick={() => handleSort('employees')}
+                        className="text-xs flex items-center gap-1 text-slate-600 bg-white border border-slate-200 px-2 py-1 rounded"
+                    >
+                        排序: {sortKey === 'employees' ? '在岗' : sortKey === 'shortage' ? '缺工' : sortKey === 'turnoverRate' ? '流失率' : '默认'}
+                        <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                </div>
+
+                <div className="divide-y divide-slate-100">
+                    {sortedCompanies.map((company) => {
+                        const shortageRate = company.employees > 0
+                            ? (company.shortage / company.employees * 100).toFixed(1)
+                            : '0.0';
+
+                        return (
+                            <div key={company.name} className="p-4 bg-white hover:bg-slate-50 transition-colors">
+                                <div className="flex items-start gap-3 mb-3">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedCompanies.has(company.name)}
+                                        onChange={() => toggleSelectCompany(company.name)}
+                                        className="mt-1 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <button
+                                                onClick={() => handleViewDetail(company.name)}
+                                                className="text-base font-semibold text-blue-600 hover:text-blue-800 text-left truncate leading-tight"
+                                            >
+                                                {company.name}
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
+                                            <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">{company.industry}</span>
+                                            <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">{company.town}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-2 pl-7">
+                                    <div className="bg-slate-50 rounded p-2 text-center">
+                                        <div className="text-[10px] text-slate-400 mb-0.5">在岗职工</div>
+                                        <div className="text-sm font-bold text-slate-900">{company.employees.toLocaleString()}</div>
+                                    </div>
+                                    <div className="bg-slate-50 rounded p-2 text-center">
+                                        <div className="text-[10px] text-slate-400 mb-0.5">缺工人数</div>
+                                        <div className={`text-sm font-bold ${company.shortage > 0 ? 'text-amber-600' : 'text-slate-900'}`}>{company.shortage}</div>
+                                    </div>
+                                    <div className="bg-slate-50 rounded p-2 text-center">
+                                        <div className="text-[10px] text-slate-400 mb-0.5">流失率</div>
+                                        <div className={`text-sm font-bold ${company.turnoverRate > 10 ? 'text-rose-600' : 'text-slate-900'}`}>{company.turnoverRate.toFixed(1)}%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
                 <table className="w-full min-w-[700px]">
                     <thead className="bg-slate-50 border-b border-slate-200">
                         <tr>
