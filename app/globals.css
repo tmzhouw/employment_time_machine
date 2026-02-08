@@ -3,6 +3,30 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Report Specific Variables (Government Document Aesthetic) */
+  --primary: #1e3a5f;
+  --primary-foreground: #ffffff;
+  --sidebar-primary: #1e3a5f;
+  --sidebar-primary-foreground: #ffffff;
+  --chart-1: #1e3a5f;
+  --chart-2: #2c5282;
+  --chart-3: #3182ce;
+  --chart-4: #b8860b;
+  --chart-5: #4299e1;
+  --chart-6: #90cdf4;
+  --radius: 0.375rem;
+  --secondary: #f7fafc;
+  --secondary-foreground: #2d3748;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #1a202c;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #1e3a5f;
 }
 
 @theme inline {
@@ -11,10 +35,27 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-noto-serif);
+  
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
+    /* Keep report colors consistent even in dark mode for reliability, 
+       or override specific layout parts if needed. 
+       For now, we trust the report page to force light mode via class/style. */
     --background: #0a0a0a;
     --foreground: #ededed;
   }
@@ -23,5 +64,97 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Government Report Specific Styles */
+.report-title {
+  font-family: var(--font-noto-serif), serif;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.report-section-title {
+  font-family: var(--font-noto-serif), serif;
+  font-weight: 600;
+  color: var(--primary);
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 0.5rem;
+}
+
+.report-subsection-title {
+  font-family: var(--font-sans), sans-serif;
+  font-weight: 600;
+  color: var(--chart-2);
+}
+
+.data-highlight {
+  color: #b8860b;
+  font-weight: 700;
+  font-family: var(--font-mono), monospace;
+}
+
+.report-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.report-table th {
+  background-color: var(--primary);
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border: 1px solid var(--primary);
+}
+
+.report-table td {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+}
+
+.report-table tr:nth-child(even) {
+  background-color: var(--secondary);
+}
+
+.report-table tr:hover {
+  background-color: var(--muted);
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: white;
+    color: black;
+    font-size: 12pt;
+  }
+
+  /* Force light mode variables for print */
+  :root {
+    --background: #ffffff;
+    --foreground: #000000;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+
+  /* Ensure background colors are printed */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  .report-table th {
+    background-color: var(--primary) !important;
+    color: white !important;
+  }
 }

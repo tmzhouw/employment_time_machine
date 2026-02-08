@@ -49,7 +49,9 @@ export function TownRanking({ data }: TownRankingProps) {
     const config = getMetricConfig();
 
     // Sort top 10 based on selected metric
+    // Sort top 10 based on selected metric, excluding "Other Towns"
     const sortedData = [...data]
+        .filter(item => item.name !== '其他乡镇' && item.name !== '其他' && item.name !== '未知')
         .sort((a, b) => (b as any)[config.key] - (a as any)[config.key])
         .slice(0, 10);
 

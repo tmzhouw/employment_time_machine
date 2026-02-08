@@ -12,6 +12,7 @@ import {
     Cell
 } from 'recharts';
 import { IndustryStat } from '@/lib/data';
+import { INDUSTRY_POLICY_ORDER } from '@/lib/constants';
 
 interface IndustryRankingProps {
     data: IndustryStat[];
@@ -35,8 +36,14 @@ export function IndustryRanking({ data }: IndustryRankingProps) {
 
     const config = getMetricConfig();
 
-    const sortedData = [...data]
-        .sort((a, b) => (b as any)[config.key] - (a as any)[config.key]);
+    // Sort by "一主两新三支撑" policy order
+    const sortedData = [...data].sort((a, b) => {
+        const idxA = INDUSTRY_POLICY_ORDER.indexOf(a.name);
+        const idxB = INDUSTRY_POLICY_ORDER.indexOf(b.name);
+        const orderA = idxA === -1 ? INDUSTRY_POLICY_ORDER.length : idxA;
+        const orderB = idxB === -1 ? INDUSTRY_POLICY_ORDER.length : idxB;
+        return orderA - orderB;
+    });
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col" style={{ height: '500px' }}>

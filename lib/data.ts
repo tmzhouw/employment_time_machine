@@ -2,6 +2,10 @@ import 'server-only'; // Ensure this runs only on server
 import { supabaseAdmin as supabase } from './supabase-admin';
 import { getPgPool } from './db';
 import { cache } from 'react';
+import { INDUSTRY_POLICY_ORDER, sortByIndustryPolicy } from './constants';
+export { INDUSTRY_POLICY_ORDER, sortByIndustryPolicy };
+
+
 
 // Reusable filter helper
 function applyFilters(data: any[], filters?: { industry?: string, town?: string, companyName?: string }) {
@@ -154,16 +158,18 @@ export async function getTrendData(filters?: { industry?: string, town?: string 
         const monthKey = `${date.getMonth() + 1}月`;
 
         if (!monthlyTotals.has(monthKey)) {
-            monthlyTotals.set(monthKey, { month: monthKey, total: 0, shortage: 0, sortInd: date.getTime() });
+            monthlyTotals.set(monthKey, { month: monthKey, total: 0, shortage: 0, newHires: 0, attrition: 0, sortInd: date.getTime() });
         }
 
         const cur = monthlyTotals.get(monthKey);
         cur.total += row.employees_total || 0;
         cur.shortage += row.shortage_total || 0;
+        cur.newHires += row.recruited_new || 0;
+        cur.attrition += row.resigned_total || 0;
     });
 
     return Array.from(monthlyTotals.values())
-        .map(({ month, total, shortage }) => ({ month, total, shortage }));
+        .map(({ month, total, shortage, newHires, attrition }) => ({ month, total, shortage, newHires, attrition }));
 }
 
 export async function getTopShortageCompanies(limit = 10, filters?: { industry?: string, town?: string }) {
@@ -327,7 +333,6 @@ export async function getReportSummary(filters?: { industry?: string, town?: str
 
     // Filter for current year (2025) for cumulative stats
     const currentYear = new Date().getFullYear().toString();
-    // If no data for current year, fallback to latest available year
     const allSortedDates = [...new Set(filteredData.map(d => d.report_month))].sort();
     const latestAvailableDate = allSortedDates[allSortedDates.length - 1];
     const targetYear = latestAvailableDate?.startsWith(currentYear) ? currentYear : (latestAvailableDate?.substring(0, 4) || currentYear);
@@ -336,16 +341,13 @@ export async function getReportSummary(filters?: { industry?: string, town?: str
 
     let cumulative_recruited = 0;
     let cumulative_resigned = 0;
-    let net_growth = 0;
 
     yearData.forEach(r => {
         cumulative_recruited += r.recruited_new || 0;
         cumulative_resigned += r.resigned_total || 0;
-        net_growth += ((r.recruited_new || 0) - (r.resigned_total || 0));
     });
 
-    // Fetch latest month detailed data for current totals (Employment & Shortage)
-    // We already have all data, just find latest date
+    // Fetch latest month detailed data for current totals
     filteredData.sort((a, b) => new Date(b.report_month).getTime() - new Date(a.report_month).getTime());
     const latestMonth = filteredData[0].report_month;
     const latestData = filteredData.filter(d => d.report_month === latestMonth);
@@ -362,16 +364,47 @@ export async function getReportSummary(filters?: { industry?: string, town?: str
         ? ((current_total_shortage / (current_total_employees + current_total_shortage)) * 100).toFixed(1) + '%'
         : '0%';
 
-    // Calculate Net Growth based on: Latest Month Total - Earliest Month Total of TARGET YEAR
-    // First, verify we have time span
+    // Net Growth & Growth Rate
     const yearSortedDates = [...new Set(yearData.map(d => d.report_month))].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
     const startDate = yearSortedDates[0];
     const startData = yearData.filter(d => d.report_month === startDate);
     const start_total_employees = startData.reduce((acc, curr) => acc + (curr.employees_total || 0), 0);
 
-    // If we have data for the year, use End - Start. If not, use the cumulative net growth we calculated.
-    // Actually, usually End - Start is better if available.
     const net_growth_diff = current_total_employees - start_total_employees;
+    const growthRate = start_total_employees > 0
+        ? parseFloat(((net_growth_diff / start_total_employees) * 100).toFixed(1))
+        : 0;
+
+    // Top Industries Share ("One Major, Two New, Three Support" vs Total)
+    // We categorize all companies in latestData
+    const targetIndustries = ["纺织服装", "生物医药化工", "电子信息", "装备制造", "新能源新材料", "农副产品深加工"];
+    let topIndustriesEmployees = 0;
+    latestData.forEach(r => {
+        const comp = Array.isArray(r.companies) ? r.companies[0] : r.companies;
+        const ind = comp?.industry || "";
+        if (targetIndustries.some(t => ind.includes(t))) {
+            topIndustriesEmployees += (r.employees_total || 0);
+        }
+    });
+    const topIndustriesShare = current_total_employees > 0
+        ? parseFloat(((topIndustriesEmployees / current_total_employees) * 100).toFixed(1))
+        : 0;
+
+    // Top Towns Share (Top 2 Towns)
+    const townMap = new Map<string, number>();
+    latestData.forEach(r => {
+        const comp = Array.isArray(r.companies) ? r.companies[0] : r.companies;
+        const t = comp?.town || "其他";
+        townMap.set(t, (townMap.get(t) || 0) + (r.employees_total || 0));
+    });
+    const top2TownsEmployees = Array.from(townMap.values())
+        .sort((a, b) => b - a)
+        .slice(0, 2)
+        .reduce((sum, val) => sum + val, 0);
+
+    const topTownsShare = current_total_employees > 0
+        ? parseFloat(((top2TownsEmployees / current_total_employees) * 100).toFixed(1))
+        : 0;
 
     return {
         total_enterprises,
@@ -379,11 +412,13 @@ export async function getReportSummary(filters?: { industry?: string, town?: str
         start_employment: start_total_employees,
         cumulative_recruited,
         cumulative_resigned,
-        net_growth: net_growth_diff, // Use the new difference logic
-        net_growth_recruits_minus_resigned: net_growth, // Keep old one just in case
+        net_growth: net_growth_diff,
+        growthRate,
         turnover_rate,
         shortage_rate,
-        current_total_shortage
+        current_total_shortage,
+        topIndustriesShare,
+        topTownsShare
     };
 }
 
@@ -410,9 +445,31 @@ export async function getIndustryDistribution(filters?: { industry?: string, tow
         industryStats.set(industry, current + (row.employees_total || 0));
     });
 
+    // Custom sort order: One Major -> Two New -> Three Support -> Commerce -> Other
+    const sortOrder = [
+        '纺织服装',          // One Major
+        '生物医药化工',      // Two New
+        '电子信息',          // Two New
+        '装备制造',          // Three Support
+        '新能源新材料',      // Three Support
+        '农副产品深加工',    // Three Support
+        '商贸物流',          // Commerce
+        '其他'
+    ];
+
+    const getRank = (name: string) => {
+        const idx = sortOrder.findIndex(key => name === key || name.includes(key));
+        return idx !== -1 ? idx : 99;
+    };
+
     return Array.from(industryStats.entries())
         .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value);
+        .sort((a, b) => {
+            const rankA = getRank(a.name);
+            const rankB = getRank(b.name);
+            if (rankA !== rankB) return rankA - rankB;
+            return b.value - a.value; // Tie-break by value
+        });
 }
 
 export async function getRegionalDistribution(filters?: { industry?: string, town?: string }) {
@@ -435,9 +492,24 @@ export async function getRegionalDistribution(filters?: { industry?: string, tow
         townTotals.set(town, currentVal + (row.employees_total || 0));
     });
 
-    return Array.from(townTotals.entries())
+    // Aggregate Top 10 towns, rest into "其他乡镇"
+    const sortedAllTowns = Array.from(townTotals.entries())
         .map(([name, value]) => ({ name, value }))
         .sort((a, b) => b.value - a.value);
+
+    console.log('[DEBUG] All Towns Found:', sortedAllTowns.map(t => `${t.name} (${t.value})`));
+
+    const top10 = sortedAllTowns.slice(0, 10);
+    const others = sortedAllTowns.slice(10);
+
+    const result = [...top10];
+
+    if (others.length > 0) {
+        const otherTotal = others.reduce((sum, item) => sum + item.value, 0);
+        result.push({ name: '其他乡镇', value: otherTotal });
+    }
+
+    return result;
 }
 
 // Helper to get dropdown options
@@ -742,11 +814,8 @@ export async function getTownStats(filters?: { industry?: string }): Promise<Tow
         group.companies.push(row);
     });
 
-    const stats: TownStat[] = [];
-
-    townGroups.forEach((group, town) => {
-        if (town === '未知' || town === '其他') return; // Optionally filter out unknowns
-
+    // Aggregate Top 10 towns, rest into "其他乡镇"
+    const allTownStats = Array.from(townGroups.entries()).map(([name, group]) => {
         // Find Top Industry
         const indCounts = new Map<string, number>();
         group.companies.forEach(row => {
@@ -754,28 +823,60 @@ export async function getTownStats(filters?: { industry?: string }): Promise<Tow
             const ind = comp?.industry || '其他';
             indCounts.set(ind, (indCounts.get(ind) || 0) + (row.employees_total || 0));
         });
-
         const topIndustry = Array.from(indCounts.entries())
             .sort((a, b) => b[1] - a[1])[0]?.[0] || '综合';
 
-        const turnoverRate = group.employees > 0 ? (group.resigned / group.employees) * 100 : 0;
-        const shortageRate = (group.employees + group.shortage) > 0
-            ? (group.shortage / (group.employees + group.shortage)) * 100
-            : 0;
-
-        stats.push({
-            name: town,
+        return {
+            name,
             totalEmployees: group.employees,
             shortageCount: group.shortage,
-            shortageRate: parseFloat(shortageRate.toFixed(1)),
-            topIndustry: topIndustry,
-            turnoverRate: parseFloat(turnoverRate.toFixed(1)),
+            recruitedCount: group.recruited,
+            resignedCount: group.resigned,
+            topIndustry,
+            shortageRate: group.employees > 0 ? parseFloat(((group.shortage / group.employees) * 100).toFixed(1)) : 0,
+            turnoverRate: group.employees > 0 ? parseFloat(((group.resigned / group.employees) * 100).toFixed(1)) : 0,
             companyCount: group.companies.length,
             talentStructure: group.talent
-        });
-    });
+        };
+    }).sort((a, b) => b.totalEmployees - a.totalEmployees);
 
-    return stats.sort((a, b) => b.totalEmployees - a.totalEmployees);
+    const top10 = allTownStats.slice(0, 10);
+    const others = allTownStats.slice(10);
+
+    const result = [...top10];
+
+    if (others.length > 0) {
+        // Aggregate others
+        const otherGroup = {
+            name: '其他乡镇',
+            totalEmployees: 0,
+            shortageCount: 0,
+            recruitedCount: 0,
+            resignedCount: 0,
+            companyCount: 0,
+            talentStructure: { general: 0, tech: 0, mgmt: 0 }
+        };
+
+        others.forEach(o => {
+            otherGroup.totalEmployees += o.totalEmployees;
+            otherGroup.shortageCount += o.shortageCount;
+            otherGroup.recruitedCount += o.recruitedCount;
+            otherGroup.resignedCount += o.resignedCount;
+            otherGroup.companyCount += o.companyCount;
+            otherGroup.talentStructure.general += o.talentStructure.general;
+            otherGroup.talentStructure.tech += o.talentStructure.tech;
+            otherGroup.talentStructure.mgmt += o.talentStructure.mgmt;
+        });
+
+        result.push({
+            ...otherGroup,
+            topIndustry: '混合',
+            shortageRate: otherGroup.totalEmployees > 0 ? parseFloat(((otherGroup.shortageCount / otherGroup.totalEmployees) * 100).toFixed(1)) : 0,
+            turnoverRate: otherGroup.totalEmployees > 0 ? parseFloat(((otherGroup.resignedCount / otherGroup.totalEmployees) * 100).toFixed(1)) : 0,
+        } as any);
+    }
+
+    return result;
 }
 
 // ===== Industry Stats (Phase 4) =====
@@ -884,7 +985,7 @@ export async function getIndustryStats(filters?: { town?: string }): Promise<Ind
         });
     });
 
-    return stats.sort((a, b) => b.totalEmployees - a.totalEmployees);
+    return sortByIndustryPolicy(stats);
 }
 
 // ===== Industry Detail (Phase 4 - Modal) =====
@@ -1107,11 +1208,36 @@ export interface TownDetailResponse {
 export async function getTownDetail(townName: string): Promise<TownDetailResponse> {
     const allData = await fetchAllRawData();
 
-    // Filter to this town only
-    const townData = allData.filter((row: any) => {
-        const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
-        return comp?.town === townName;
-    });
+    let townData: any[];
+
+    if (townName === '其他乡镇') {
+        // Special case: aggregate all towns NOT in top 10
+        // First, find the top 10 towns by total employees
+        const townTotals = new Map<string, number>();
+        allData.forEach((row: any) => {
+            const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+            const town = comp?.town || '未知';
+            townTotals.set(town, (townTotals.get(town) || 0) + (row.employees_total || 0));
+        });
+        const top10Towns = new Set(
+            Array.from(townTotals.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .map(([name]) => name)
+        );
+        // Filter to all towns NOT in top 10
+        townData = allData.filter((row: any) => {
+            const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+            const town = comp?.town || '未知';
+            return !top10Towns.has(town);
+        });
+    } else {
+        // Normal case: filter to specific town
+        townData = allData.filter((row: any) => {
+            const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+            return comp?.town === townName;
+        });
+    }
 
     if (townData.length === 0) {
         return {
@@ -1623,4 +1749,256 @@ export async function getSeasonalStats(
             avgShortage: avg(data.shortageSamples)
         };
     }).sort((a, b) => a.month - b.month);
+}
+
+// ============================================================================
+// REPORT GENERATION FUNCTIONS (Phase 5 - Official Report)
+// ============================================================================
+
+export async function getDetailedIndustryAnalysis() {
+    const allData = await fetchAllRawData();
+
+    // 1. Define Categories and Mappings
+    const CATEGORIES: Record<string, string[]> = {
+        "一主": ["纺织服装"],
+        "两新": ["生物医药化工", "电子信息"],
+        "三支撑": ["装备制造", "新能源新材料", "农副产品深加工"]
+    };
+
+    // Helper to find category
+    const getCategory = (industryName: string) => {
+        if (!industryName) return "其他";
+        for (const [cat, industries] of Object.entries(CATEGORIES)) {
+            if (industries.some(ind => industryName.includes(ind))) return cat;
+        }
+        return "其他";
+    };
+
+    // 2. Group data by Industry (Normalized)
+    const targetIndustries = [
+        "纺织服装",
+        "生物医药化工", "电子信息",
+        "装备制造", "新能源新材料", "农副产品深加工"
+    ];
+
+    const industryGroups = new Map<string, any[]>();
+
+    // Normalize industry names from DB
+    const normalizeIndustry = (name: string) => {
+        if (!name) return "其他";
+        for (const target of targetIndustries) {
+            if (name.includes(target)) return target;
+        }
+        return "其他";
+    };
+
+    allData.forEach((row: any) => {
+        const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+        const rawIndustry = comp?.industry || "其他";
+        const normalized = normalizeIndustry(rawIndustry);
+
+        if (!industryGroups.has(normalized)) {
+            industryGroups.set(normalized, []);
+        }
+        industryGroups.get(normalized)!.push(row);
+    });
+
+    // 3. Aggregate Metrics for each Industry Group
+    const result = targetIndustries.map(name => {
+        const rows = industryGroups.get(name) || [];
+        if (rows.length === 0) return null;
+
+        // Category
+        const category = getCategory(name);
+
+        // Unique Companies
+        const companies = new Set(rows.map((r: any) => r.company_id));
+        const companyCount = companies.size;
+
+        // Monthly Trends (Sum of employees per month)
+        // Group rows by month
+        const monthMap = new Map<string, number>();
+        rows.forEach((r: any) => {
+            monthMap.set(r.report_month, (monthMap.get(r.report_month) || 0) + (r.employees_total || 0));
+        });
+
+        // Sort months and take last 12
+        const sortedMonths = Array.from(monthMap.keys()).sort();
+        const last12Months = sortedMonths.slice(-12);
+        const monthlyEmployees = last12Months.map(m => monthMap.get(m) || 0);
+
+        // Calculate Average Employees (of the monthly totals)
+        const avgEmployees = Math.round(monthlyEmployees.reduce((a, b) => a + b, 0) / (monthlyEmployees.length || 1));
+
+        // Growth Rate (Last month vs First month of period)
+        const firstMonthVal = monthlyEmployees[0] || 0;
+        const lastMonthVal = monthlyEmployees[monthlyEmployees.length - 1] || 0;
+        const netGrowth = lastMonthVal - firstMonthVal;
+        const growthRate = firstMonthVal > 0 ? parseFloat(((netGrowth / firstMonthVal) * 100).toFixed(1)) : 0;
+
+        // Total New Hires and Vacancy (Latest)
+        // Detect latest available year from the data
+        const uniqueMonths = Array.from(new Set(rows.map((r: any) => r.report_month))).sort();
+        const latestDateStr = uniqueMonths[uniqueMonths.length - 1] || "";
+        const targetYear = latestDateStr.substring(0, 4) || new Date().getFullYear().toString();
+
+        const yearRows = rows.filter((r: any) => r.report_month.startsWith(targetYear));
+        const totalNewHires = yearRows.reduce((sum: number, r: any) => sum + (r.recruited_new || 0), 0);
+
+        // Detailed latest data for Top Companies
+        const latestDate = sortedMonths[sortedMonths.length - 1];
+        const latestRows = rows.filter((r: any) => r.report_month === latestDate);
+        const totalVacancy = latestRows.reduce((sum: number, r: any) => sum + (r.shortage_total || 0), 0);
+
+        // Top 5 Companies by dimensions
+        const topCompanies = latestRows
+            .sort((a: any, b: any) => (b.employees_total || 0) - (a.employees_total || 0))
+            .slice(0, 5)
+            .map((r: any) => {
+                const comp = Array.isArray(r.companies) ? r.companies[0] : r.companies;
+                const compId = r.company_id;
+                const compYearRows = yearRows.filter((yr: any) => yr.company_id === compId);
+                const compNewHires = compYearRows.reduce((sum: number, x: any) => sum + (x.recruited_new || 0), 0);
+                const compAttrition = compYearRows.reduce((sum: number, x: any) => sum + (x.resigned_total || 0), 0);
+
+                return {
+                    name: comp?.name || "未知",
+                    avgEmployees: r.employees_total || 0, // Current employees
+                    newHires: compNewHires,
+                    attrition: compAttrition,
+                    vacancy: r.shortage_total || 0
+                };
+            });
+
+        // Top Towns distribution for this industry
+        const townMap = new Map<string, number>();
+        latestRows.forEach((r: any) => {
+            const comp = Array.isArray(r.companies) ? r.companies[0] : r.companies;
+            const t = comp?.town || "其他";
+            townMap.set(t, (townMap.get(t) || 0) + (r.employees_total || 0));
+        });
+        const topTowns = Array.from(townMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([name, employees]) => ({ name, employees }));
+
+        return {
+            category,
+            name,
+            companyCount,
+            avgEmployees,
+            growthRate,
+            totalNewHires,
+            netGrowth,
+            totalVacancy,
+            monthlyEmployees, // Array of numbers
+            topCompanies,
+            topTowns
+        };
+    }).filter(Boolean); // Remove nulls (if no data for an industry)
+
+    return result as any[];
+}
+
+export async function getTownDetailedAnalysis() {
+    const allData = await fetchAllRawData();
+
+    // Group by Town
+    const townGroups = new Map<string, any[]>();
+
+    // Get latest data only for snapshot
+    const sortedData = [...allData].sort((a, b) => new Date(a.report_month).getTime() - new Date(b.report_month).getTime());
+    const companyLatestMap = new Map();
+    sortedData.forEach((row: any) => companyLatestMap.set(row.company_id, row));
+    const latestRows = Array.from(companyLatestMap.values());
+
+    latestRows.forEach((row: any) => {
+        const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
+        const town = comp?.town || "其他";
+        if (!townGroups.has(town)) townGroups.set(town, []);
+        townGroups.get(town)!.push(row);
+    });
+
+    const totalEmployeesCity = latestRows.reduce((sum: number, r: any) => sum + (r.employees_total || 0), 0);
+
+    // Calculate metrics for all towns first
+    const allTownStats = Array.from(townGroups.entries()).map(([name, rows]) => {
+        const companies = rows.length;
+        const employees = rows.reduce((sum: number, r: any) => sum + (r.employees_total || 0), 0);
+        return { name, companies, employees, rows };  // Keep rows for aggregation
+    }).sort((a, b) => b.employees - a.employees);
+
+    // Top 10 + Other
+    const top10 = allTownStats.slice(0, 10);
+    const others = allTownStats.slice(10);
+
+    const finalResult = top10.map(item => ({
+        name: item.name,
+        companies: item.companies,
+        employees: item.employees,
+        percentage: totalEmployeesCity > 0 ? parseFloat(((item.employees / totalEmployeesCity) * 100).toFixed(1)) : 0
+    }));
+
+    if (others.length > 0) {
+        const otherEmployees = others.reduce((sum, item) => sum + item.employees, 0);
+        const otherCompanies = others.reduce((sum, item) => sum + item.companies, 0);
+        const otherPercentage = totalEmployeesCity > 0 ? parseFloat(((otherEmployees / totalEmployeesCity) * 100).toFixed(1)) : 0;
+
+        finalResult.push({
+            name: '其他乡镇',
+            companies: otherCompanies,
+            employees: otherEmployees,
+            percentage: otherPercentage
+        });
+    }
+
+    // No need to sort again, top 10 already sorted, others pushed to end
+    return finalResult;
+}
+export async function getTalentAnalysis() {
+    const allData = await fetchAllRawData();
+    if (allData.length === 0) return [];
+
+    // Latest month snapshot
+    allData.sort((a, b) => new Date(b.report_month).getTime() - new Date(a.report_month).getTime());
+    const latestMonth = allData[0].report_month;
+    const currentData = allData.filter(d => d.report_month === latestMonth);
+
+    const typeCounts = new Map<string, number>();
+
+    currentData.forEach((row: any) => {
+        const detail = typeof row.shortage_detail === 'string'
+            ? JSON.parse(row.shortage_detail)
+            : (row.shortage_detail || {});
+
+        // Map keys to readable names
+        // Assuming keys are "general", "tech", "mgmt", "sales" etc.
+        // Or if they are already Chinese, use directly.
+        // Based on other code, keys seem to be "general", "tech", "mgmt"
+        const MAPPING: Record<string, string> = {
+            "general": "普工",
+            "tech": "技工",
+            "mgmt": "管理/销售",
+            "sales": "管理/销售",
+            "other": "其他"
+        };
+
+        Object.entries(detail).forEach(([key, val]) => {
+            const count = Number(val) || 0;
+            if (count > 0) {
+                const name = MAPPING[key] || key;
+                typeCounts.set(name, (typeCounts.get(name) || 0) + count);
+            }
+        });
+    });
+
+    const total = Array.from(typeCounts.values()).reduce((a, b) => a + b, 0);
+
+    return Array.from(typeCounts.entries())
+        .map(([type, count]) => ({
+            type,
+            count,
+            percentage: total > 0 ? parseFloat(((count / total) * 100).toFixed(1)) : 0
+        }))
+        .sort((a, b) => b.count - a.count);
 }
