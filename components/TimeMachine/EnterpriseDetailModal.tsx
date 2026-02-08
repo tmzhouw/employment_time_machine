@@ -57,12 +57,12 @@ export function EnterpriseDetailModal({ data: initialData }: { data: any }) {
     }, [companyData, selectedYear, availableYears]);
 
     const stats = useMemo(() => {
-        const currentRecruited = currentYearData.reduce((sum, d) => sum + d.recruited_new, 0);
-        const currentResigned = currentYearData.reduce((sum, d) => sum + d.resigned_total, 0);
+        const currentRecruited = currentYearData.reduce((sum, d) => sum + (d.recruited_new || 0), 0);
+        const currentResigned = currentYearData.reduce((sum, d) => sum + (d.resigned_total || 0), 0);
         const currentNetGrowth = currentRecruited - currentResigned;
-        const maxShortage = Math.max(...currentYearData.map(d => d.shortage_total), 0);
-        const prevRecruited = prevYearData.reduce((sum, d) => sum + d.recruited_new, 0);
-        const prevResigned = prevYearData.reduce((sum, d) => sum + d.resigned_total, 0);
+        const maxShortage = Math.max(...currentYearData.map(d => d.shortage_total || 0), 0);
+        const prevRecruited = prevYearData.reduce((sum, d) => sum + (d.recruited_new || 0), 0);
+        const prevResigned = prevYearData.reduce((sum, d) => sum + (d.resigned_total || 0), 0);
 
         const calcYoY = (curr: number, prev: number) => {
             if (!prev) return null;
