@@ -47,8 +47,8 @@ export default async function ReportPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 py-8 print:bg-white print:py-0 font-sans text-slate-800">
-            <div className="container mx-auto max-w-[210mm] bg-white p-8 sm:p-12 shadow-lg print:shadow-none print:max-w-none print:p-0 min-h-[297mm]">
+        <div className="min-h-screen report-bg py-4 sm:py-8 print:bg-white print:py-0 font-sans text-slate-800">
+            <div className="container mx-auto max-w-[210mm] bg-white/95 backdrop-blur-sm p-4 sm:p-8 md:p-12 shadow-lg print:shadow-none print:max-w-none print:p-0 print:bg-white min-h-[297mm]">
 
                 {/* 封面/标题 */}
                 <ReportHeader dataYear={summaryData.dataYear} />

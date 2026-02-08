@@ -17,10 +17,10 @@ export function TalentAnalysis({ data }: TalentProps) {
                 六、人才需求分析
             </h2>
 
-            <div className="grid grid-cols-2 gap-8 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 mb-6">
                 <div>
                     <h3 className="text-sm font-bold text-[#2c5282] mb-3">图6：急缺岗位类型分布</h3>
-                    <div className="h-[250px] w-full border border-slate-100 bg-white">
+                    <div className="h-[200px] sm:h-[250px] w-full border border-slate-100 bg-white">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie

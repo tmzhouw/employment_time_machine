@@ -26,7 +26,7 @@ export function TrendAnalysis({ data, dataYear }: TrendProps) {
 
             <div className="mb-8">
                 <h3 className="text-sm font-bold text-[#2c5282] mb-3">图1：{dataYear}年月度员工总数变化趋势</h3>
-                <div className="h-[250px] w-full border border-slate-100 p-4 bg-white">
+                <div className="h-[200px] sm:h-[250px] w-full border border-slate-100 p-2 sm:p-4 bg-white">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={data}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -41,7 +41,7 @@ export function TrendAnalysis({ data, dataYear }: TrendProps) {
 
             <div className="mb-6">
                 <h3 className="text-sm font-bold text-[#2c5282] mb-3">图2：{dataYear}年月度招聘与流失对比</h3>
-                <div className="h-[250px] w-full border border-slate-100 p-4 bg-white">
+                <div className="h-[200px] sm:h-[250px] w-full border border-slate-100 p-2 sm:p-4 bg-white">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={data}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />

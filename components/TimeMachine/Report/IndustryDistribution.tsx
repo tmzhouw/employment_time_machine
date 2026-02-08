@@ -25,18 +25,18 @@ export function IndustryDistribution({ data, totalEmployees }: IndustryDistProps
                 三、行业分布分析
             </h2>
 
-            <div className="grid grid-cols-2 gap-8 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 mb-6">
                 <div>
                     <h3 className="text-sm font-bold text-[#2c5282] mb-3">图3：各行业用工占比</h3>
-                    <div className="h-[300px] w-full border border-slate-100 bg-white">
+                    <div className="h-[280px] sm:h-[300px] w-full border border-slate-100 bg-white">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
                                     data={data}
                                     cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={90}
+                                    cy="45%"
+                                    innerRadius={55}
+                                    outerRadius={85}
                                     paddingAngle={2}
                                     dataKey="value"
                                 >
@@ -45,11 +45,11 @@ export function IndustryDistribution({ data, totalEmployees }: IndustryDistProps
                                     ))}
                                 </Pie>
                                 <Tooltip formatter={(val: any) => [val.toLocaleString() + '人', '用工规模']} />
-                                <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ fontSize: 11 }} />
-                                <text x="50%" y="47%" textAnchor="middle" dominantBaseline="middle" className="text-xs text-gray-400">
+                                <Legend layout="horizontal" align="center" verticalAlign="bottom" wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />
+                                <text x="50%" y="42%" textAnchor="middle" dominantBaseline="middle" className="text-xs text-gray-400">
                                     总用工
                                 </text>
-                                <text x="50%" y="53%" textAnchor="middle" dominantBaseline="middle" className="text-lg font-bold text-[#1e3a5f]">
+                                <text x="50%" y="49%" textAnchor="middle" dominantBaseline="middle" className="text-lg font-bold text-[#1e3a5f]">
                                     {totalEmployees.toLocaleString()}
                                 </text>
                             </PieChart>

@@ -35,7 +35,7 @@ export function ReportOverview({
                 一、总体概况
             </h2>
 
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
                 <OverviewCard title="调查企业数" value={totalCompanies} unit="家" />
                 <OverviewCard title="月均用工规模" value={avgEmployees.toLocaleString()} unit="人" />
                 <OverviewCard title="全年新招人数" value={totalNewHires.toLocaleString()} unit="人" highlight />
@@ -56,9 +56,9 @@ export function ReportOverview({
 
 function OverviewCard({ title, value, unit, highlight }: { title: string, value: string | number, unit: string, highlight?: boolean }) {
     return (
-        <div className="border border-blue-100 p-4 rounded bg-white print:border-gray-200">
-            <div className="text-xs text-gray-500 mb-2">{title}</div>
-            <div className={`text-2xl font-bold font-mono ${highlight ? 'text-[#b8860b]' : 'text-[#1e3a5f]'}`}>
+        <div className="border border-blue-100 p-3 sm:p-4 rounded bg-white print:border-gray-200">
+            <div className="text-xs text-gray-500 mb-1 sm:mb-2">{title}</div>
+            <div className={`text-xl sm:text-2xl font-bold font-mono ${highlight ? 'text-[#b8860b]' : 'text-[#1e3a5f]'}`}>
                 {value}
             </div>
             {unit && <div className="text-xs text-gray-400 mt-1">{unit}</div>}

@@ -35,7 +35,7 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-noto-serif);
-  
+
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -121,6 +121,42 @@ body {
   background-color: var(--muted);
 }
 
+/* Report Mobile Background */
+.report-bg {
+  background: linear-gradient(180deg, #f0f4ff 0%, #e8eeff 100%);
+  position: relative;
+}
+
+.report-bg::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(ellipse at 50% 30%, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.04) 40%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.report-bg>* {
+  position: relative;
+  z-index: 1;
+}
+
+/* Mobile Report Styles */
+@media (max-width: 639px) {
+  .report-table th {
+    padding: 0.5rem 0.4rem;
+    font-size: 0.7rem;
+  }
+
+  .report-table td {
+    padding: 0.5rem 0.4rem;
+    font-size: 0.75rem;
+  }
+}
+
 /* Print Styles */
 @media print {
   body {
@@ -152,7 +188,7 @@ body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-  
+
   .report-table th {
     background-color: var(--primary) !important;
     color: white !important;

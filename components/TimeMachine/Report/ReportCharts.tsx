@@ -55,11 +55,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 function ReportCard({ title, description, children }: { title: string, description?: string, children: React.ReactNode }) {
     return (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm break-inside-avoid">
-            <div className="p-6 border-b border-gray-100">
-                <h3 className="text-xl font-semibold text-primary font-serif tracking-tight">{title}</h3>
-                {description && <p className="text-sm text-gray-500 mt-1">{description}</p>}
+            <div className="p-4 sm:p-6 border-b border-gray-100">
+                <h3 className="text-lg sm:text-xl font-semibold text-primary font-serif tracking-tight">{title}</h3>
+                {description && <p className="text-xs sm:text-sm text-gray-500 mt-1">{description}</p>}
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
                 {children}
             </div>
         </div>
@@ -100,7 +100,7 @@ export function IndustryBarChart({ data, title, description }: ChartProps) {
 export function TownComparisonChart({ data, title, description }: ChartProps) {
     return (
         <ReportCard title={title} description={description}>
-            <ResponsiveContainer width="100%" height={500}>
+            <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={data} layout="vertical" margin={{ left: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={true} vertical={false} />
                     <XAxis type="number" stroke="#64748b" tick={{ fill: '#64748b', fontSize: 12 }} hide />
