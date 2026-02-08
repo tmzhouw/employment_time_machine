@@ -24,8 +24,7 @@ export function NavBar() {
                     <Link href="/" className="flex items-center gap-2 md:gap-3 hover:opacity-90 transition-opacity">
                         <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center font-serif font-bold text-blue-900 text-lg md:text-xl shadow-inner flex-shrink-0">T</div>
                         <div>
-                            <h1 className="text-sm md:text-xl font-bold tracking-tight text-white leading-none line-clamp-1">天门市企业用工时序监测平台</h1>
-                            <p className="text-[10px] md:hidden text-blue-200 mt-0.5">Employment Time-Machine</p>
+                            <h1 className="text-base md:text-xl font-bold tracking-tight text-white leading-none line-clamp-1">天门市企业用工时序监测平台</h1>
                         </div>
                     </Link>
                 </div>
