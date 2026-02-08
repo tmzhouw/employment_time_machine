@@ -98,8 +98,8 @@ export default async function GeographyAnalysisPage() {
             {/* Enterprise Detail Modal */}
             <EnterpriseDetailModal data={null} />
 
-            {/* 3. Comparison */}
-            <section>
+            {/* 3. Comparison — hidden on mobile (radar renders poorly + duplicates KPI info) */}
+            <section className="hidden md:block">
                 <div className="flex items-center gap-2 mb-4">
                     <h2 className="text-lg font-semibold text-slate-900">重点区域深度对比</h2>
                 </div>

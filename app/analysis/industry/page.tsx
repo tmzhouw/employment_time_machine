@@ -98,8 +98,8 @@ export default async function IndustryAnalysisPage() {
             {/* Enterprise Detail Modal (triggered via URL param) */}
             <EnterpriseDetailModal data={null} />
 
-            {/* Radar Comparison */}
-            <section>
+            {/* Radar Comparison — hidden on mobile (renders poorly + duplicates KPI info) */}
+            <section className="hidden md:block">
                 <Suspense fallback={<div className="h-[400px] bg-white rounded-xl animate-pulse" />}>
                     <IndustryRadar data={industryStats} />
                 </Suspense>
