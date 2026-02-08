@@ -190,11 +190,11 @@ export default function TalentAnalysisPage() {
                                         {row.name}
                                         <span className="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded">详情</span>
                                     </td>
-                                    <td className="px-6 py-4 font-bold">{row.shortageCount}</td>
+                                    <td className="px-6 py-4 font-bold text-slate-900">{row.shortageCount}</td>
                                     <td className="px-6 py-4 text-blue-600 font-medium">{row.talentStructure?.general || 0}</td>
                                     <td className="px-6 py-4 text-pink-600 font-medium">{row.talentStructure?.tech || 0}</td>
                                     <td className="px-6 py-4 text-purple-600">{row.talentStructure?.mgmt || 0}</td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 text-slate-900 font-medium">
                                         {row.shortageCount > 0
                                             ? `${(((row.talentStructure?.tech || 0) / row.shortageCount) * 100).toFixed(1)}%`
                                             : '-'
