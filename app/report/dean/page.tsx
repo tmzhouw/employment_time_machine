@@ -69,7 +69,7 @@ export default async function DeanReportPage() {
 
     return (
         <div className="min-h-screen report-bg py-4 sm:py-8 print:bg-white print:py-0 font-sans text-slate-800">
-            <div className="container mx-auto max-w-[210mm] bg-white/95 backdrop-blur-sm p-4 sm:p-8 md:p-12 shadow-lg print:shadow-none print:max-w-none print:p-0 print:bg-white min-h-[297mm]">
+            <div className="container mx-auto max-w-[210mm] bg-white/95 backdrop-blur-sm p-4 sm:p-8 md:p-12 shadow-lg print:shadow-none print:max-w-none print:p-0 print:bg-white min-h-[297mm]" suppressHydrationWarning>
 
                 {/* Customized Header (No Unit Name) */}
                 <div data-pdf-section="cover">
@@ -85,7 +85,7 @@ export default async function DeanReportPage() {
                         </div>
                         <div className="space-y-1 text-sm sm:text-base text-gray-500">
                             {/* Deleted Unit Name */}
-                            <p>报告日期：{new Date().getFullYear()}年{new Date().getMonth() + 1}月</p>
+                            <p suppressHydrationWarning>报告日期：{summaryData.dataYear}年12月</p>
                         </div>
                     </header>
                 </div>
