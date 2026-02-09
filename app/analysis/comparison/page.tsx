@@ -6,6 +6,8 @@ export const metadata = {
     description: '多维度对比不同行业与区域的用工情况',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function ComparisonPage() {
     // Fetch initial lists for the selector
     const [industryStats, townStats] = await Promise.all([

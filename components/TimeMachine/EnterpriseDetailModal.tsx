@@ -65,15 +65,15 @@ export function EnterpriseDetailModal({ data: initialData }: { data: any }) {
         const prevResigned = prevYearData.reduce((sum, d) => sum + (d.resigned_total || 0), 0);
 
         const calcYoY = (curr: number, prev: number) => {
-            if (!prev) return null;
+            if (!prev || isNaN(prev) || isNaN(curr)) return null;
             return ((curr - prev) / prev * 100).toFixed(1);
         };
 
         return {
-            netGrowth: currentNetGrowth,
-            totalRecruited: currentRecruited,
-            totalResigned: currentResigned,
-            maxShortage,
+            netGrowth: isNaN(currentNetGrowth) ? 0 : currentNetGrowth,
+            totalRecruited: isNaN(currentRecruited) ? 0 : currentRecruited,
+            totalResigned: isNaN(currentResigned) ? 0 : currentResigned,
+            maxShortage: isNaN(maxShortage) || maxShortage === -Infinity ? 0 : maxShortage,
             yoyRecruited: calcYoY(currentRecruited, prevRecruited),
             yoyResigned: calcYoY(currentResigned, prevResigned)
         };
@@ -171,7 +171,16 @@ export function EnterpriseDetailModal({ data: initialData }: { data: any }) {
                                 <div className="flex items-center gap-1"><Building2 size={12} /> {companyInfo.industry}</div>
                                 <div className="flex items-center gap-1"><MapPin size={12} /> {companyInfo.town}</div>
                                 <div className="flex items-center gap-1"><User size={12} /> {companyInfo.contact_person || '未登记'}</div>
-                                {!isMobile && <div className="flex items-center gap-1"><Phone size={12} /> {companyInfo.contact_phone || '-'}</div>}
+                                {!isMobile && (
+                                    <div className="flex items-center gap-1">
+                                        <Phone size={12} />
+                                        {companyInfo.contact_phone ? (
+                                            <a href={`tel:${companyInfo.contact_phone}`} className="hover:text-white hover:underline decoration-white/50 underline-offset-4 transition-all">
+                                                {companyInfo.contact_phone}
+                                            </a>
+                                        ) : '-'}
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <button onClick={handleClose} className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors ml-2 shrink-0">
@@ -212,6 +221,7 @@ export function EnterpriseDetailModal({ data: initialData }: { data: any }) {
                             trend={stats.netGrowth >= 0 ? "positive" : "negative"}
                             sub="基于当年累计"
                             compact={isMobile}
+                            bgClass={stats.netGrowth >= 0 ? "bg-emerald-50 border-emerald-100" : "bg-rose-50 border-rose-100"}
                         />
                         <StatCard
                             label="缺工峰值"
@@ -220,6 +230,8 @@ export function EnterpriseDetailModal({ data: initialData }: { data: any }) {
                             icon={<AlertCircle size={isMobile ? 16 : 20} className="text-orange-500" />}
                             sub="年度最高缺口"
                             compact={isMobile}
+                            bgClass="bg-orange-50 border-orange-100"
+                            valueClass="text-orange-600"
                         />
                         <StatCard
                             label="累计新招"
@@ -228,6 +240,7 @@ export function EnterpriseDetailModal({ data: initialData }: { data: any }) {
                             icon={<ArrowUpRight size={isMobile ? 16 : 20} className="text-blue-500" />}
                             yoy={stats.yoyRecruited}
                             compact={isMobile}
+                            bgClass="bg-blue-50 border-blue-100"
                         />
                         <StatCard
                             label="累计流失"
@@ -237,6 +250,7 @@ export function EnterpriseDetailModal({ data: initialData }: { data: any }) {
                             yoy={stats.yoyResigned}
                             inverseTrend
                             compact={isMobile}
+                            bgClass="bg-slate-50 border-slate-100"
                         />
                     </div>
 
@@ -253,22 +267,34 @@ export function EnterpriseDetailModal({ data: initialData }: { data: any }) {
                                     <span className="text-gray-600">{selectedYear}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                    <span className="w-2 h-2 md:w-3 md:h-3 rounded-full border border-slate-400 border-dashed"></span>
-                                    <span className="text-gray-400">{parseInt(selectedYear) - 1}</span>
+                                    <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-violet-400"></span>
+                                    <span className="text-gray-400">{selectedYear ? parseInt(selectedYear) - 1 : ''}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <span className="w-2 h-2 md:w-3 md:h-3 rounded-sm bg-red-400"></span>
+                                    <span className="text-gray-400">缺工</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div style={{ width: '100%', height: isMobile ? 200 : 320 }}>
+                        <div style={{ width: '100%', height: isMobile ? 220 : 320 }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <ComposedChart data={chartData} margin={chartMargin}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                     <XAxis dataKey="month" tick={{ fontSize: isMobile ? 10 : 12, fill: '#64748b' }} axisLine={false} tickLine={false} interval={isMobile ? 1 : 0} />
                                     <YAxis tick={{ fontSize: isMobile ? 10 : 12, fill: '#64748b' }} axisLine={false} tickLine={false} width={isMobile ? 30 : 45} tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)} />
-                                    <Tooltip content={<CustomTooltip currentYear={selectedYear} prevYear={(parseInt(selectedYear) - 1).toString()} />} />
-                                    <Line type="monotone" dataKey="employees_prev" stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="5 5" dot={false} name={`${parseInt(selectedYear) - 1} 在岗`} />
+                                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: isMobile ? 10 : 12, fill: '#f87171' }} axisLine={false} tickLine={false} width={isMobile ? 20 : 30} />
+                                    <Tooltip content={<CustomTooltip currentYear={selectedYear} prevYear={selectedYear ? (parseInt(selectedYear) - 1).toString() : ''} />} />
+
+                                    {/* Previous Year - Solid purple line for clear visibility */}
+                                    <Line type="monotone" dataKey="employees_prev" stroke="#a78bfa" strokeWidth={1.5} dot={false} name={`${selectedYear ? parseInt(selectedYear) - 1 : ''} 在岗`} />
+
+                                    {/* Current Year - Solid Line */}
                                     <Line type="monotone" dataKey="employees" stroke="#3b82f6" strokeWidth={isMobile ? 2 : 3} dot={isMobile ? false : { r: 4, strokeWidth: 2, fill: '#fff', stroke: '#3b82f6' }} activeDot={{ r: 5, fill: '#3b82f6' }} name={`${selectedYear} 在岗`} />
-                                    <Area type="monotone" dataKey="shortage" fill="#fecaca" stroke="#f87171" fillOpacity={0.2} name="当前缺工" />
+
+                                    {/* Shortage - Bar Chart on Right Y-Axis */}
+                                    <Bar yAxisId="right" dataKey="shortage" fill="#f87171" name="当前缺工" barSize={isMobile ? 4 : 8} radius={[2, 2, 0, 0]} fillOpacity={0.8} />
+
                                 </ComposedChart>
                             </ResponsiveContainer>
                         </div>
@@ -303,15 +329,15 @@ export function EnterpriseDetailModal({ data: initialData }: { data: any }) {
     );
 }
 
-function StatCard({ label, value, unit, icon, sub, trend, yoy, inverseTrend, compact }: any) {
+function StatCard({ label, value, unit, icon, sub, trend, yoy, inverseTrend, compact, bgClass = "bg-white border-gray-100", valueClass }: any) {
     return (
-        <div className="bg-white p-3 md:p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className={clsx("p-3 md:p-4 rounded-xl border shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow", bgClass)}>
             <div className="flex items-center justify-between text-gray-500 mb-1 md:mb-2">
-                <span className="text-xs md:text-sm font-medium">{label}</span>
+                <span className="text-xs md:text-sm font-medium opacity-80">{label}</span>
                 {icon}
             </div>
             <div>
-                <div className={clsx("text-xl md:text-2xl font-bold font-mono tracking-tight", {
+                <div className={clsx("text-xl md:text-2xl font-bold font-mono tracking-tight", valueClass || {
                     "text-emerald-600": trend === 'positive',
                     "text-rose-600": trend === 'negative',
                     "text-gray-900": !trend
@@ -326,7 +352,11 @@ function StatCard({ label, value, unit, icon, sub, trend, yoy, inverseTrend, com
                             Number(yoy) > 0 ? (inverseTrend ? "text-rose-500" : "text-emerald-500") :
                                 Number(yoy) < 0 ? (inverseTrend ? "text-emerald-500" : "text-rose-500") : "text-slate-400"
                         )}>
-                            {Number(yoy) > 0 ? '↑' : '↓'} {Math.abs(Number(yoy))}%
+                            {!isNaN(Number(yoy)) ? (
+                                <>
+                                    {Number(yoy) > 0 ? '↑' : (Number(yoy) < 0 ? '↓' : '')} {Math.abs(Number(yoy))}%
+                                </>
+                            ) : '-'}
                             {!compact && <span className="text-slate-400 ml-0.5">(同比)</span>}
                         </div>
                     )}
