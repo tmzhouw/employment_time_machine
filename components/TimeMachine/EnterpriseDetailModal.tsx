@@ -142,7 +142,7 @@ export function EnterpriseDetailModal({ data: initialData }: { data: any }) {
     };
 
     const chartMargin = isMobile
-        ? { top: 5, right: 5, left: -15, bottom: 0 }
+        ? { top: 5, right: 20, left: 0, bottom: 0 }
         : { top: 10, right: 10, left: 0, bottom: 0 };
 
     return (
@@ -171,16 +171,14 @@ export function EnterpriseDetailModal({ data: initialData }: { data: any }) {
                                 <div className="flex items-center gap-1"><Building2 size={12} /> {companyInfo.industry}</div>
                                 <div className="flex items-center gap-1"><MapPin size={12} /> {companyInfo.town}</div>
                                 <div className="flex items-center gap-1"><User size={12} /> {companyInfo.contact_person || '未登记'}</div>
-                                {!isMobile && (
-                                    <div className="flex items-center gap-1">
-                                        <Phone size={12} />
-                                        {companyInfo.contact_phone ? (
-                                            <a href={`tel:${companyInfo.contact_phone}`} className="hover:text-white hover:underline decoration-white/50 underline-offset-4 transition-all">
-                                                {companyInfo.contact_phone}
-                                            </a>
-                                        ) : '-'}
-                                    </div>
-                                )}
+                                <div className="flex items-center gap-1">
+                                    <Phone size={12} />
+                                    {companyInfo.contact_phone ? (
+                                        <a href={`tel:${companyInfo.contact_phone}`} className="hover:text-white hover:underline decoration-white/50 underline-offset-4 transition-all">
+                                            {companyInfo.contact_phone}
+                                        </a>
+                                    ) : '-'}
+                                </div>
                             </div>
                         </div>
                         <button onClick={handleClose} className="p-1.5 md:p-2 hover:bg-white/10 rounded-full transition-colors ml-2 shrink-0">
@@ -282,15 +280,15 @@ export function EnterpriseDetailModal({ data: initialData }: { data: any }) {
                                 <ComposedChart data={chartData} margin={chartMargin}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                     <XAxis dataKey="month" tick={{ fontSize: isMobile ? 10 : 12, fill: '#64748b' }} axisLine={false} tickLine={false} interval={isMobile ? 1 : 0} />
-                                    <YAxis tick={{ fontSize: isMobile ? 10 : 12, fill: '#64748b' }} axisLine={false} tickLine={false} width={isMobile ? 30 : 45} tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)} />
+                                    <YAxis yAxisId="left" tick={{ fontSize: isMobile ? 10 : 12, fill: '#64748b' }} axisLine={false} tickLine={false} width={isMobile ? 40 : 45} allowDecimals={false} tickFormatter={(v: number) => v >= 10000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
                                     <YAxis yAxisId="right" orientation="right" tick={{ fontSize: isMobile ? 10 : 12, fill: '#f87171' }} axisLine={false} tickLine={false} width={isMobile ? 20 : 30} />
                                     <Tooltip content={<CustomTooltip currentYear={selectedYear} prevYear={selectedYear ? (parseInt(selectedYear) - 1).toString() : ''} />} />
 
                                     {/* Previous Year - Solid purple line for clear visibility */}
-                                    <Line type="monotone" dataKey="employees_prev" stroke="#a78bfa" strokeWidth={1.5} dot={false} name={`${selectedYear ? parseInt(selectedYear) - 1 : ''} 在岗`} />
+                                    <Line yAxisId="left" type="monotone" dataKey="employees_prev" stroke="#a78bfa" strokeWidth={1.5} dot={false} name={`${selectedYear ? parseInt(selectedYear) - 1 : ''} 在岗`} />
 
                                     {/* Current Year - Solid Line */}
-                                    <Line type="monotone" dataKey="employees" stroke="#3b82f6" strokeWidth={isMobile ? 2 : 3} dot={isMobile ? false : { r: 4, strokeWidth: 2, fill: '#fff', stroke: '#3b82f6' }} activeDot={{ r: 5, fill: '#3b82f6' }} name={`${selectedYear} 在岗`} />
+                                    <Line yAxisId="left" type="monotone" dataKey="employees" stroke="#3b82f6" strokeWidth={isMobile ? 2 : 3} dot={isMobile ? false : { r: 4, strokeWidth: 2, fill: '#fff', stroke: '#3b82f6' }} activeDot={{ r: 5, fill: '#3b82f6' }} name={`${selectedYear} 在岗`} />
 
                                     {/* Shortage - Bar Chart on Right Y-Axis */}
                                     <Bar yAxisId="right" dataKey="shortage" fill="#f87171" name="当前缺工" barSize={isMobile ? 4 : 8} radius={[2, 2, 0, 0]} fillOpacity={0.8} />
