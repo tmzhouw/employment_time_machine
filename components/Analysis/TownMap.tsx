@@ -67,7 +67,7 @@ const CustomizedContent = (props: any) => {
                     fill="#fff"
                     fontSize={14}
                     fontWeight="bold"
-                    style={{ pointerEvents: 'none' }} // Ensure text doesn't block tooltip
+                    style={{ pointerEvents: 'none', textShadow: '0 1px 3px rgba(0,0,0,0.5)' }} // Ensure text doesn't block tooltip
                 >
                     {name}
                 </text>
@@ -80,8 +80,9 @@ const CustomizedContent = (props: any) => {
                     textAnchor="middle"
                     fill="#fff"
                     fontSize={12}
-                    fillOpacity={0.9}
-                    style={{ pointerEvents: 'none' }}
+                    fontWeight={500}
+                    fillOpacity={0.95}
+                    style={{ pointerEvents: 'none', textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}
                 >
                     {Math.round(shortageRate)}% 缺口
                 </text>
