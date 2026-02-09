@@ -84,7 +84,7 @@ const CustomizedContent = (props: any) => {
                     fillOpacity={0.95}
                     style={{ pointerEvents: 'none', textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}
                 >
-                    {Math.round(shortageRate)}% 缺口
+                    {typeof shortageRate === 'number' ? shortageRate.toFixed(1) : shortageRate}% 缺口
                 </text>
             )}
         </g>
