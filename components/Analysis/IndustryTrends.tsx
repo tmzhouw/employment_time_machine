@@ -77,7 +77,7 @@ const CustomizedContent = (props: any) => {
                     fontSize={16}
                     fontWeight="bold"
                     clipPath={`url(#${clipId})`}
-                    style={{ pointerEvents: 'none' }}
+                    style={{ pointerEvents: 'none', textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}
                 >
                     {displayName}
                 </text>
@@ -89,9 +89,10 @@ const CustomizedContent = (props: any) => {
                     textAnchor="middle"
                     fill="#fff"
                     fontSize={13}
-                    fillOpacity={0.9}
+                    fontWeight={500}
+                    fillOpacity={0.95}
                     clipPath={`url(#${clipId})`}
-                    style={{ pointerEvents: 'none' }}
+                    style={{ pointerEvents: 'none', textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}
                 >
                     {turnoverRate?.toFixed(1)}% 流失
                 </text>
