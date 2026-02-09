@@ -120,7 +120,7 @@ export function BarChartSection({
                             tickLine={false}
                             axisLine={false}
                             width={100}
-                            tick={{ fontSize: 12, fill: '#4b5563' }}
+                            tick={{ fontSize: 12, fill: '#374151', fontWeight: 500 }}
                         />
                         <Tooltip cursor={{ fill: '#f3f4f6' }} content={<CustomTooltip />} />
                         <Bar
