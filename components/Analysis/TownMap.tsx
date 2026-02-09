@@ -59,7 +59,7 @@ const CustomizedContent = (props: any) => {
                     strokeOpacity: 1 / (depth + 1e-10),
                 }}
             />
-            {width > 50 && height > 30 && (
+            {width > 35 && height > 20 && (
                 <text
                     x={x + width / 2}
                     y={y + height / 2}
