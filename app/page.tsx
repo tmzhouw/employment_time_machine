@@ -142,7 +142,7 @@ export default async function DashboardPage(props: PageProps) {
                                     <TrendingUp className="text-blue-600" size={18} />
                                     用工人数 vs 缺工人数 剪刀差分析
                                 </h2>
-                                <p className="text-xs md:text-sm text-gray-400 ml-6 md:ml-7">观察"在岗人数"与"缺工人数"的变化趋势，识别结构性缺工风险。</p>
+                                <p className="text-xs md:text-sm text-gray-500 ml-6 md:ml-7">观察"在岗人数"与"缺工人数"的变化趋势，识别结构性缺工风险。</p>
                             </div>
                             <div className="h-60 md:h-80">
                                 <DualAxisTrendChart data={trends} />

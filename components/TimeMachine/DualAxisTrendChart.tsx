@@ -51,7 +51,7 @@ export function DualAxisTrendChart({ data }: DualAxisTrendChartProps) {
                     dataKey="month"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: isMobile ? 10 : 12, fill: '#6B7280' }}
+                    tick={{ fontSize: isMobile ? 10 : 12, fill: '#374151' }}
                     dy={10}
                     interval={isMobile ? 1 : 0}
                 />
@@ -59,20 +59,20 @@ export function DualAxisTrendChart({ data }: DualAxisTrendChartProps) {
                     yAxisId="left"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: isMobile ? 10 : 12, fill: '#6B7280' }}
+                    tick={{ fontSize: isMobile ? 10 : 12, fill: '#374151' }}
                     ticks={leftTicks}
                     width={isMobile ? 40 : 60}
-                    label={isMobile ? undefined : { value: '在岗人数', angle: -90, position: 'insideLeft', style: { fill: '#9CA3AF', fontSize: 12 } }}
+                    label={isMobile ? undefined : { value: '在岗人数', angle: -90, position: 'insideLeft', style: { fill: '#4B5563', fontSize: 12, fontWeight: 500 } }}
                 />
                 <YAxis
                     yAxisId="right"
                     orientation="right"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: isMobile ? 10 : 12, fill: '#6B7280' }}
+                    tick={{ fontSize: isMobile ? 10 : 12, fill: '#374151' }}
                     ticks={rightTicks}
                     width={isMobile ? 35 : 60}
-                    label={isMobile ? undefined : { value: '缺工人数', angle: 90, position: 'insideRight', style: { fill: '#9CA3AF', fontSize: 12 } }}
+                    label={isMobile ? undefined : { value: '缺工人数', angle: 90, position: 'insideRight', style: { fill: '#4B5563', fontSize: 12, fontWeight: 500 } }}
                 />
                 <Tooltip
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}

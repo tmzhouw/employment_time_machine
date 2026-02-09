@@ -262,15 +262,15 @@ export function EnterpriseDetailModal({ data: initialData }: { data: any }) {
                             <div className="flex items-center gap-2 md:gap-4 text-[10px] md:text-xs">
                                 <div className="flex items-center gap-1">
                                     <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-blue-500"></span>
-                                    <span className="text-gray-600">{selectedYear}</span>
+                                    <span className="text-gray-600">{selectedYear} 在岗</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-violet-400"></span>
-                                    <span className="text-gray-400">{selectedYear ? parseInt(selectedYear) - 1 : ''}</span>
+                                    <span className="text-gray-400">{selectedYear ? parseInt(selectedYear) - 1 : ''} 在岗</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <span className="w-2 h-2 md:w-3 md:h-3 rounded-sm bg-red-400"></span>
-                                    <span className="text-gray-400">缺工</span>
+                                    <span className="text-gray-400">当前缺工</span>
                                 </div>
                             </div>
                         </div>
