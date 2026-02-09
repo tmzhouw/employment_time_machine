@@ -8,6 +8,7 @@ import { IndustryAnalysis } from '@/components/TimeMachine/Report/IndustryAnalys
 import { TownAnalysis } from '@/components/TimeMachine/Report/TownAnalysis'; // Section 5
 import { TalentAnalysis } from '@/components/TimeMachine/Report/TalentAnalysis';
 import { VocationalConclusion } from '@/components/TimeMachine/Report/VocationalConclusion';
+import { PrintButton } from '@/components/TimeMachine/Report/PrintButton';
 
 import {
     getReportSummary,
@@ -142,6 +143,8 @@ export default async function DeanReportPage() {
 
                 {/* No Footer Unit Name */}
             </div>
+
+            <PrintButton />
         </div>
     );
 }
