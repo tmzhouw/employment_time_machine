@@ -58,7 +58,7 @@ export function TrendAnalysis({ data, dataYear }: TrendProps) {
 
             <p className="leading-relaxed text-sm text-gray-700">
                 从月度趋势来看，用工规模呈现"稳中有升"的特点。年初受春节因素影响，招聘活动较为活跃。
-                下半年随着订单趋稳，用工规模保持在较高水平。需关注流失人数较高的月份，分析具体原因并采取留人措施。
+                下半年随着订单趋稳，用工规模保持在较高水平。结合流失波动规律，建议在关键节点前置开展职业素养与技能提升培训，增强员工稳定性。
             </p>
         </section>
     );
