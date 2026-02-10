@@ -33,7 +33,7 @@ export function ReportSummary({
             <div className="p-4 sm:p-6 rounded leading-relaxed text-sm sm:text-base bg-gray-50 border border-gray-200 text-gray-700">
                 <p className="mb-3 sm:mb-4">
                     本报告基于对天门市<span className="data-highlight">{totalCompanies}家</span>重点工业企业的用工情况实时跟踪调查，
-                    结合乐业天门等公开招聘平台数据，对全市用工现状、产业特色、人才需求及发展趋势进行了系统分析。
+                    结合乐业天门、天门直聘网等公开招聘平台数据，对全市用工现状、产业特色、人才需求及发展趋势进行了系统分析。
                 </p>
                 <p className="mb-3 sm:mb-4">
                     调查显示，当前天门市重点工业企业用工总规模达<span className="data-highlight">{totalEmployees.toLocaleString()}人</span>。

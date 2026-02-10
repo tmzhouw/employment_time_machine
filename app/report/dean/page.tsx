@@ -9,6 +9,7 @@ import { TownAnalysis } from '@/components/TimeMachine/Report/TownAnalysis'; // 
 import { TalentAnalysis } from '@/components/TimeMachine/Report/TalentAnalysis';
 import { VocationalConclusion } from '@/components/TimeMachine/Report/VocationalConclusion';
 import { PrintButton } from '@/components/TimeMachine/Report/PrintButton';
+import { WordExportButton } from '@/components/TimeMachine/Report/WordExportButton';
 
 import {
     getReportSummary,
@@ -70,7 +71,7 @@ export default async function DeanReportPage() {
 
     return (
         <div className="min-h-screen report-bg py-4 sm:py-8 print:bg-white print:py-0 font-sans text-slate-800">
-            <div className="container mx-auto max-w-[210mm] bg-white/95 backdrop-blur-sm p-4 sm:p-8 md:p-12 shadow-lg print:shadow-none print:max-w-none print:p-0 print:bg-white min-h-[297mm]" suppressHydrationWarning>
+            <div id="report-content" className="container mx-auto max-w-[210mm] bg-white/95 backdrop-blur-sm p-4 sm:p-8 md:p-12 shadow-lg print:shadow-none print:max-w-none print:p-0 print:bg-white min-h-[297mm]" suppressHydrationWarning>
 
                 {/* Customized Header (No Unit Name) */}
                 <div data-pdf-section="cover">
@@ -86,7 +87,7 @@ export default async function DeanReportPage() {
                         </div>
                         <div className="space-y-1 text-sm sm:text-base text-gray-500">
                             {/* Deleted Unit Name */}
-                            <p suppressHydrationWarning>报告日期：{summaryData.dataYear}年12月</p>
+                            <p suppressHydrationWarning>报告日期：2026年2月</p>
                         </div>
                     </header>
                 </div>
@@ -103,6 +104,9 @@ export default async function DeanReportPage() {
                     topTowns={summaryData.topTowns || []}
                 />
 
+                {/* Page Break after Summary Table */}
+                <div className="page-break" />
+
                 {/* 一、总体概况 */}
                 <ReportOverview
                     totalCompanies={summaryData.total_enterprises}
@@ -114,8 +118,12 @@ export default async function DeanReportPage() {
                     dataYear={summaryData.dataYear}
                 />
 
+                {/* Removed Page Break here to merge with next section */}
+
                 {/* 二、月度趋势分析 */}
                 <TrendAnalysis data={trendData} dataYear={summaryData.dataYear} />
+
+                {/* Removed Page Break here to merge with next section */}
 
                 {/* 三、行业分布分析 */}
                 <IndustryDistribution
@@ -123,14 +131,24 @@ export default async function DeanReportPage() {
                     totalEmployees={summaryData.avg_employment}
                 />
 
+                {/* Page Break after Industry Distribution */}
+                <div className="page-break" />
+
                 {/* 四、"一主两新三支撑"产业详细用工分析 (Section 4) */}
                 <IndustryAnalysis industries={industryData} />
+
+                {/* Page Break after Detailed Industry Analysis */}
+                <div className="page-break" />
 
                 {/* 五、区域分布分析 (Section 5) */}
                 <TownAnalysis townData={townData} />
 
+                {/* Removed Page Break here to merge with next section */}
+
                 {/* 六、人才需求分析 */}
                 <TalentAnalysis data={talentData} />
+
+                {/* Removed Page Break to merge with chapter 7 */}
 
                 {/* 七、职业教育与培训专项建议 (Vocational Conclusion) */}
                 <VocationalConclusion
@@ -145,6 +163,7 @@ export default async function DeanReportPage() {
             </div>
 
             <PrintButton />
-        </div>
+            <WordExportButton />
+        </div >
     );
 }

@@ -19,7 +19,7 @@ export function VocationalConclusion({
     const companyList = targetCompanies.slice(0, 3).join('、');
 
     return (
-        <section className="mb-8 print:mb-12 page-break-inside-avoid">
+        <section className="mb-8 print:mb-12">
             <h2 className="text-xl font-bold pb-2 mb-4 text-[#1e3a5f] border-b-2 border-[#1e3a5f] font-serif">
                 七、职业教育与培训专项建议
             </h2>

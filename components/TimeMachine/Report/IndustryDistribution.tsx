@@ -20,12 +20,12 @@ export function IndustryDistribution({ data, totalEmployees }: IndustryDistProps
     }));
 
     return (
-        <section className="mb-8 print:mb-12 page-break-inside-avoid">
+        <section className="mb-6 print:mb-6">
             <h2 className="text-xl font-bold pb-2 mb-4 text-[#1e3a5f] border-b-2 border-[#1e3a5f] font-serif">
                 三、行业分布分析
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-8 mb-4">
                 <div>
                     <h3 className="text-sm font-bold text-[#2c5282] mb-3">图3：各行业用工占比</h3>
                     <div className="h-[280px] sm:h-[300px] w-full border border-slate-100 bg-white">

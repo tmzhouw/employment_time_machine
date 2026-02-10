@@ -46,17 +46,18 @@ export interface IndustryDetail {
 export function IndustryAnalysis({ industries }: { industries: IndustryDetail[] }) {
     return (
         <section className="mb-8 sm:mb-10 md:mb-12">
-            <h2 className="report-section-title text-xl sm:text-2xl pb-2 mb-4 sm:mb-6">
+            {/* Removed wrapper, using break-after-avoid instead */}
+            <h2 className="report-section-title text-xl sm:text-2xl pb-2 mb-3 sm:mb-4 break-after-avoid">
                 四、"一主两新三支撑"产业详细用工分析
             </h2>
 
-            <p className="leading-relaxed mb-6 text-sm sm:text-base text-gray-700">
+            <p className="leading-relaxed mb-4 text-sm sm:text-base text-gray-700 break-after-avoid">
                 本章节基于实时跟踪调查数据，对"一主两新三支撑"六大重点产业的用工情况进行详细分析，
                 包括各产业的月度用工趋势、重点企业用工情况、招聘与流失分析等。
             </p>
 
             {industries.map((industry, idx) => (
-                <div key={idx} className="mb-8 p-4 sm:p-6 rounded-lg bg-slate-50 border border-slate-200 break-inside-avoid">
+                <div key={idx} className="mb-6 p-4 sm:p-6 rounded-lg bg-slate-50 border border-slate-200 break-inside-avoid page-break-inside-avoid">
                     <div className="flex items-center mb-4">
                         <div className="w-2 h-8 rounded mr-3" style={{ backgroundColor: CATEGORY_COLORS[industry.category] || CATEGORY_COLORS['其他'] }}></div>
                         <div>

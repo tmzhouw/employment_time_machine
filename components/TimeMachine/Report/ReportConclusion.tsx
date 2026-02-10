@@ -121,7 +121,7 @@ export function ReportConclusion({
     // 4. Public employment services
     suggestions.push({
         title: '完善公共就业服务。',
-        content: '充分发挥乐业天门等平台作用，加强用工信息对接，提高人岗匹配效率。'
+        content: '充分发挥乐业天门、天门直聘网等平台作用，加强用工信息对接，提高人岗匹配效率。'
     });
 
     return (
