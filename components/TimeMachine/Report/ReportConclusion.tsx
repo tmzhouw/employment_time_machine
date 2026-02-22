@@ -130,22 +130,24 @@ export function ReportConclusion({
                 七、结论与建议
             </h2>
 
+            {/* 1. Major Conclusions */}
             <div className="mb-6">
-                <h3 className="text-sm font-bold text-[#2c5282] mb-2">（一）主要结论</h3>
-                <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
+                <h3 className="text-sm font-bold text-[#2c5282] mb-3 print:mb-4">（一）主要结论</h3>
+                <div className="text-sm text-gray-700 leading-relaxed space-y-2 print:space-y-0">
                     {conclusions.map((c, i) => (
-                        <p key={i} className="indent-8">
+                        <p key={i} className="indent-8 mb-2 print:mb-2">
                             {i + 1}. <strong>{c.title}</strong> {c.content}
                         </p>
                     ))}
                 </div>
             </div>
 
-            <div>
-                <h3 className="text-sm font-bold text-[#2c5282] mb-2">（二）对策建议</h3>
-                <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
+            {/* 2. Suggestions */}
+            <div className="mb-6">
+                <h3 className="text-sm font-bold text-[#2c5282] mb-3 print:mb-4">（二）对策建议</h3>
+                <div className="text-sm text-gray-700 leading-relaxed space-y-2 print:space-y-0">
                     {suggestions.map((s, i) => (
-                        <p key={i} className="indent-8">
+                        <p key={i} className="indent-8 mb-2 print:mb-2">
                             {i + 1}. <strong>{s.title}</strong> {s.content}
                         </p>
                     ))}

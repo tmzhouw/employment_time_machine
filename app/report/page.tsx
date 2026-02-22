@@ -65,6 +65,9 @@ export default async function ReportPage() {
                     topTowns={summaryData.topTowns || []}
                 />
 
+                {/* 封面后分页：总体概况从第二页开始 */}
+                <div className="page-break" />
+
                 {/* 一、总体概况 */}
                 <ReportOverview
                     totalCompanies={summaryData.total_enterprises}

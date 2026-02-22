@@ -181,10 +181,10 @@ body {
   /* 报告主标题 */
   .report-title,
   h1 {
-    font-size: 16pt !important;
+    font-size: 26pt !important;
     font-weight: bold !important;
     text-align: center !important;
-    margin-bottom: 16pt !important;
+    margin-bottom: 20pt !important;
     color: var(--primary) !important;
     white-space: nowrap !important;
   }
