@@ -1,7 +1,8 @@
 import { Suspense } from 'react';
-import { getAccountData, createManager } from './actions';
+import { getAccountData, createManager, createAdmin } from './actions';
 import AccountsClient from './AccountsClient';
 import { Users } from 'lucide-react';
+import { getSession } from '@/lib/auth';
 
 export const metadata = {
     title: '账号管理 - 政府管理后台',
@@ -11,7 +12,8 @@ export const dynamic = 'force-dynamic';
 
 async function AccountsOverview() {
     const data = await getAccountData();
-    return <AccountsClient initialData={data} createAction={createManager} />;
+    const session = await getSession();
+    return <AccountsClient initialData={data} createAction={createManager} createAdminAction={createAdmin} currentUsername={session?.user?.username || ''} />;
 }
 
 export default function AccountsPage() {

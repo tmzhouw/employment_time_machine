@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { UserPlus, KeyRound, Building2, ShieldCheck, Search, Users } from 'lucide-react';
-import { resetManagerPassword, resetEnterprisePassword, changeAdminPassword } from './actions';
+import { resetManagerPassword, resetEnterprisePassword, changeAdminPassword, resetAdminPassword } from './actions';
 
-function SubmitButton() {
+function SubmitButton({ label = '生成专员账号', pendingLabel = '创建中...' }: { label?: string, pendingLabel?: string }) {
     const { pending } = useFormStatus();
     return (
         <button
@@ -13,25 +13,43 @@ function SubmitButton() {
             disabled={pending}
             className={`w-full py-2.5 rounded-lg text-white font-medium shadow-sm transition-all ${pending ? 'bg-indigo-400 cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98]'}`}
         >
-            {pending ? '创建中...' : '生成专员账号'}
+            {pending ? pendingLabel : label}
         </button>
     );
 }
 
-const tabs = [
-    { key: 'managers', label: '专员账号', icon: Users, count: 0 },
-    { key: 'enterprises', label: '企业账号', icon: Building2, count: 0 },
-    { key: 'admins', label: '管理员', icon: ShieldCheck, count: 0 },
+const allTabs = [
+    { key: 'managers', label: '专员账号', icon: Users },
+    { key: 'enterprises', label: '企业账号', icon: Building2 },
+    { key: 'admins', label: '管理员', icon: ShieldCheck },
 ];
 
-export default function AccountsClient({ initialData, createAction }: { initialData: any, createAction: any }) {
+export default function AccountsClient({
+    initialData,
+    createAction,
+    createAdminAction,
+    currentUsername
+}: {
+    initialData: any,
+    createAction: any,
+    createAdminAction: any,
+    currentUsername: string
+}) {
     const { managers, enterprises, admins } = initialData;
+    const isRootAdmin = currentUsername === 'adminuser';
+    const tabs = isRootAdmin ? allTabs : allTabs.filter(t => t.key !== 'admins');
+
     const [activeTab, setActiveTab] = useState('managers');
     const [actionMsg, setActionMsg] = useState({ type: '', text: '' });
+    const [adminActionMsg, setAdminActionMsg] = useState({ type: '', text: '' });
     const [pwdMsg, setPwdMsg] = useState({ type: '', text: '' });
     const [entSearch, setEntSearch] = useState('');
 
-    const tabCounts = { managers: managers?.length || 0, enterprises: enterprises?.length || 0, admins: admins?.length || 0 };
+    const tabCounts: Record<string, number> = {
+        managers: managers?.length || 0,
+        enterprises: enterprises?.length || 0,
+        admins: admins?.length || 0
+    };
 
     const handleCreate = async (formData: FormData) => {
         setActionMsg({ type: '', text: '' });
@@ -41,6 +59,17 @@ export default function AccountsClient({ initialData, createAction }: { initialD
         } else if (res?.success) {
             setActionMsg({ type: 'success', text: res.message });
             (document.getElementById('createManagerForm') as HTMLFormElement).reset();
+        }
+    };
+
+    const handleCreateAdmin = async (formData: FormData) => {
+        setAdminActionMsg({ type: '', text: '' });
+        const res = await createAdminAction(null, formData);
+        if (res?.error) {
+            setAdminActionMsg({ type: 'error', text: res.error });
+        } else if (res?.success) {
+            setAdminActionMsg({ type: 'success', text: res.message });
+            (document.getElementById('createAdminForm') as HTMLFormElement).reset();
         }
     };
 
@@ -72,14 +101,14 @@ export default function AccountsClient({ initialData, createAction }: { initialD
             <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
                 {tabs.map(tab => {
                     const Icon = tab.icon;
-                    const count = tabCounts[tab.key as keyof typeof tabCounts];
+                    const count = tabCounts[tab.key] || 0;
                     return (
                         <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.key
-                                    ? 'bg-white text-gray-900 shadow-sm'
-                                    : 'text-gray-500 hover:text-gray-700'
+                                ? 'bg-white text-gray-900 shadow-sm'
+                                : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
                             <Icon className="w-4 h-4" />
@@ -119,7 +148,7 @@ export default function AccountsClient({ initialData, createAction }: { initialD
                                     {actionMsg.text}
                                 </div>
                             )}
-                            <SubmitButton />
+                            <SubmitButton label="生成专员账号" pendingLabel="创建中..." />
                         </form>
                     </div>
 
@@ -239,24 +268,58 @@ export default function AccountsClient({ initialData, createAction }: { initialD
                 </div>
             )}
 
-            {/* Tab 3: Admin Accounts */}
-            {activeTab === 'admins' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Tab 3: Admin Accounts (only visible to adminuser) */}
+            {activeTab === 'admins' && isRootAdmin && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Admin Creation */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="p-5 border-b border-gray-100 bg-slate-50">
+                            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                <ShieldCheck className="w-5 h-5 text-indigo-600" />
+                                新增管理员
+                            </h2>
+                            <p className="text-sm text-gray-500 mt-1">创建拥有系统管理权限的超管账号</p>
+                        </div>
+                        <form id="createAdminForm" action={handleCreateAdmin} className="p-5 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">登录账号名称 <span className="text-red-500">*</span></label>
+                                <input
+                                    name="username"
+                                    required
+                                    type="text"
+                                    minLength={4}
+                                    placeholder="例如: admin_li"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                />
+                            </div>
+                            {adminActionMsg.text && (
+                                <div className={`p-3 rounded-lg text-sm ${adminActionMsg.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-green-50 text-green-700 border border-green-100'}`}>
+                                    {adminActionMsg.text}
+                                </div>
+                            )}
+                            <SubmitButton label="创建管理员账号" pendingLabel="创建中..." />
+                            <p className="text-xs text-gray-400 leading-relaxed">
+                                初始密码为 123456，新管理员首次登录后须修改密码。
+                            </p>
+                        </form>
+                    </div>
+
+                    {/* Admin List */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                         <div className="p-5 border-b border-gray-100 bg-slate-50">
                             <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                                <ShieldCheck className="w-5 h-5 text-indigo-600" />
-                                超级管理员列表
+                                管理员列表 ({admins?.length || 0})
                             </h3>
-                            <p className="text-xs text-gray-500 mt-1">拥有系统最高权限的管理账号</p>
                         </div>
-                        <ul className="divide-y divide-gray-50">
+                        <ul className="divide-y divide-gray-50 max-h-[500px] overflow-y-auto">
                             {admins?.map((a: any) => (
-                                <li key={a.id} className="p-4 flex items-center justify-between">
+                                <li key={a.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
                                     <div>
                                         <p className="font-medium text-gray-900 flex items-center gap-2">
                                             {a.username}
-                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 font-mono">SUPER_ADMIN</span>
+                                            {a.username === 'adminuser' && (
+                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 font-mono">超管</span>
+                                            )}
                                         </p>
                                         <p className="text-xs text-gray-500 mt-0.5" suppressHydrationWarning>
                                             {a.last_login
@@ -264,7 +327,25 @@ export default function AccountsClient({ initialData, createAction }: { initialD
                                                 : '从未登录'}
                                         </p>
                                     </div>
-                                    <span className="text-xs text-gray-400">只读</span>
+                                    {a.username !== 'adminuser' ? (
+                                        <button
+                                            onClick={async () => {
+                                                if (confirm(`确定要将管理员 ${a.username} 的密码重置为 123456 吗？`)) {
+                                                    try {
+                                                        await resetAdminPassword(a.id);
+                                                        alert('密码已成功重置为 123456');
+                                                    } catch (e: any) {
+                                                        alert('重置失败: ' + e.message);
+                                                    }
+                                                }
+                                            }}
+                                            className="text-xs text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded-md font-medium transition-colors shrink-0"
+                                        >
+                                            重置密码
+                                        </button>
+                                    ) : (
+                                        <span className="text-xs text-gray-400">当前用户</span>
+                                    )}
                                 </li>
                             ))}
                             {(!admins || admins.length === 0) && (
@@ -273,6 +354,7 @@ export default function AccountsClient({ initialData, createAction }: { initialD
                         </ul>
                     </div>
 
+                    {/* Change My Password */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                         <div className="p-5 border-b border-gray-100 bg-slate-50">
                             <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">

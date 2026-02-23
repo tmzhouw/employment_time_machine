@@ -18,10 +18,15 @@ export async function getReportingStatus(reportMonth: string) {
         prevMonthNum = 12;
         prevYearNum -= 1;
     }
-    const prevMonthStr = `${prevYearNum}-${String(prevMonthNum).padStart(2, '0')}`;
+    const prevMonthStr = `${prevYearNum}-${String(prevMonthNum).padStart(2, '0')}-01`;
 
-    // 1. Fetch all companies 
-    // We use a simplified fetch here. In production with thousands, keep the pagination.
+    // Determine if this is the current month
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const selectedMonthKey = `${yearStr}-${monthStr}`;
+    const isCurrentMonth = currentMonthKey === selectedMonthKey;
+
+    // 1. Fetch all companies
     const { data: allCompanies } = await supabaseAdmin
         .from('companies')
         .select('id, name, town, manager_id');
@@ -29,10 +34,9 @@ export async function getReportingStatus(reportMonth: string) {
     // 2. Filter by role/manager_id
     const filteredCompanies = (allCompanies || []).filter(comp => {
         if (session.user.role === 'TOWN_ADMIN') {
-            // Reporting Admin constraint: only see assigned companies
             return comp.manager_id === session.user.id;
         }
-        return true; // Super Admin sees all
+        return true;
     });
 
     const companyIds = filteredCompanies.map(c => c.id);
@@ -60,8 +64,15 @@ export async function getReportingStatus(reportMonth: string) {
 
     const prevReportMap = new Map((prevReports || []).map(r => [r.company_id, r]));
 
-    // 5. Build Result array
-    return filteredCompanies.map(comp => {
+    // 5. Determine which companies to show:
+    //    - Current month: show ALL companies (to track who hasn't reported yet)
+    //    - Historical months: only show companies that have a report for that month
+    const displayCompanies = isCurrentMonth
+        ? filteredCompanies
+        : filteredCompanies.filter(comp => reportMap.has(comp.id));
+
+    // 6. Build Result array
+    return displayCompanies.map(comp => {
         const report = reportMap.get(comp.id);
         const prevReport = prevReportMap.get(comp.id);
 

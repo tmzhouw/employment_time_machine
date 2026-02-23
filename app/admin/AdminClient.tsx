@@ -41,6 +41,8 @@ export default function AdminClient({ initialData, reportMonth }: { initialData:
         return parseInt(yearStr) === now.getFullYear() && parseInt(monthStr) === (now.getMonth() + 1);
     };
 
+    const statusOrder: Record<string, number> = { 'SUBMITTED': 0, 'REJECTED': 1, 'PENDING': 2, 'APPROVED': 3 };
+
     const filtered = initialData.filter(r =>
         r.name.includes(searchTerm) ||
         (r.town && r.town.includes(searchTerm)) ||
@@ -48,7 +50,15 @@ export default function AdminClient({ initialData, reportMonth }: { initialData:
         (searchTerm === '待审' && r.status === 'SUBMITTED') ||
         (searchTerm === '未报' && r.status === 'PENDING') ||
         (searchTerm === '驳回' && r.status === 'REJECTED')
-    );
+    ).sort((a, b) => {
+        const aOrder = statusOrder[a.status] ?? 9;
+        const bOrder = statusOrder[b.status] ?? 9;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        // Within same status, warnings first
+        if (a.hasWarning && !b.hasWarning) return -1;
+        if (!a.hasWarning && b.hasWarning) return 1;
+        return 0;
+    });
 
     const metrics = {
         total: initialData.length,
@@ -104,6 +114,13 @@ export default function AdminClient({ initialData, reportMonth }: { initialData:
     // CSV Export
     const handleExport = () => {
         const headers = ['企业名称', '所属乡镇', '上月在职', '本月新招', '本月离职', '本月在职', '缺普工', '缺技工', '缺管理', '缺编合计', '计划招聘', '状态'];
+        const escapeCell = (v: any) => {
+            const s = String(v);
+            if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+                return `"${s.replace(/"/g, '""')}"`;
+            }
+            return s;
+        };
         const rows = filtered.map(r => [
             r.name,
             r.town || '',
@@ -120,14 +137,17 @@ export default function AdminClient({ initialData, reportMonth }: { initialData:
         ]);
 
         const BOM = '\uFEFF';
-        const csvContent = BOM + [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+        const csvContent = BOM + [headers.map(escapeCell).join(','), ...rows.map(row => row.map(escapeCell).join(','))].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `用工监测_${displayYear}年${displayMonth}月.csv`;
+        link.setAttribute('download', `yonggong_${displayYear}_${displayMonth}.csv`);
+        link.style.display = 'none';
+        document.body.appendChild(link);
         link.click();
-        URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
     };
 
     return (
@@ -161,7 +181,7 @@ export default function AdminClient({ initialData, reportMonth }: { initialData:
             </div>
 
             {/* Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 pl-6">
                     <div className="text-sm font-medium text-gray-500 mb-1 flex items-center gap-2">
                         <Building2 className="w-4 h-4" /> 责任企业总数
@@ -280,7 +300,7 @@ export default function AdminClient({ initialData, reportMonth }: { initialData:
                                         {r.updatedAt ? new Date(r.updatedAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }) : '-'}
                                     </td>
                                     <td className="px-6 py-4">
-                                        {(r.status === 'SUBMITTED' || r.status === 'APPROVED' || r.status === 'REJECTED') && (
+                                        {parseInt(yearStr) >= 2026 && (r.status === 'SUBMITTED' || r.status === 'APPROVED' || r.status === 'REJECTED') && (
                                             <button
                                                 onClick={() => {
                                                     setEditingReport(r);

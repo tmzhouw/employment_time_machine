@@ -21,7 +21,7 @@ export default function SystemPage() {
             <div className="mb-6 shrink-0">
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                     <ShieldCheck className="w-7 h-7 text-indigo-600" />
-                    系统管理 (System Management)
+                    系统管理
                 </h1>
                 <p className="text-gray-500 mt-2">
                     全局安全策略与高危指令操作审查。此页面仅超级管理员可见。

@@ -177,7 +177,7 @@ export async function updateEnterpriseData(companyId: string, payload: {
         industry: payload.industry,
         contact_person: payload.contact_person,
         contact_phone: payload.contact_phone,
-        manager_id: payload.manager_id
+        manager_id: payload.manager_id || null
     }).eq('id', companyId);
 
     if (compErr) throw new Error(compErr.message);

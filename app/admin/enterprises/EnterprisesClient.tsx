@@ -120,6 +120,7 @@ export default function EnterprisesClient({
                         <thead>
                             <tr className="bg-slate-50 border-b border-gray-100">
                                 <th className="px-6 py-4 text-sm font-semibold text-slate-600">企业名称</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-slate-600">所属乡镇</th>
                                 <th className="px-6 py-4 text-sm font-semibold text-slate-600">所属行业</th>
                                 <th className="px-6 py-4 text-sm font-semibold text-slate-600">联系人</th>
                                 <th className="px-6 py-4 text-sm font-semibold text-slate-600">HR 手机 (账号)</th>
@@ -182,7 +183,7 @@ export default function EnterprisesClient({
                             ))}
                             {initialData.length === 0 && (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                                         未找到匹配的企业
                                     </td>
                                 </tr>
@@ -401,9 +402,8 @@ export default function EnterprisesClient({
                                     <input name="contactPhone" required type="tel" maxLength={11} pattern="\d{11}" title="请输入11位手机号码" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="11位手机号" />
                                 </div>
                                 <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                    <p className="text-xs text-blue-700 flex items-start gap-1">
-                                        <span className="mt-0.5">ℹ️</span>
-                                        保存后，系统将立即用此手机号为您生成登录账号，初始默认密码为 <b>123456</b>。请提示该企业HR保管并修改。
+                                    <p className="text-xs text-blue-700 leading-relaxed">
+                                        ℹ️ 保存后，系统将以此手机号自动创建登录账号，初始密码为 <b>123456</b>，请提醒企业HR及时修改密码。
                                     </p>
                                 </div>
                             </div>
