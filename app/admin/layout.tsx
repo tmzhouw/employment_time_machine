@@ -1,6 +1,6 @@
 import { getSession, logout } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import { LayoutDashboard, Users, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, Building2, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function AdminLayout({
@@ -31,13 +31,19 @@ export default async function AdminLayout({
                         <li>
                             <Link href="/admin" className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white font-medium transition-colors">
                                 <LayoutDashboard className="w-5 h-5" />
-                                填报进度监控
+                                填报管理
                             </Link>
                         </li>
                         <li>
-                            <Link href="/admin/accounts" className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white font-medium transition-colors">
-                                <Users className="w-5 h-5" />
-                                企业账号管理
+                            <Link href="/admin/enterprises" className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white font-medium transition-colors">
+                                <Building2 className="w-5 h-5" />
+                                企业管理
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/admin/system" className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white font-medium transition-colors">
+                                <ShieldCheck className="w-5 h-5" />
+                                账号与系统管理
                             </Link>
                         </li>
                     </ul>
