@@ -41,9 +41,15 @@ export default async function AdminLayout({
                             </Link>
                         </li>
                         <li>
+                            <Link href="/admin/accounts" className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white font-medium transition-colors">
+                                <Users className="w-5 h-5" />
+                                账号管理
+                            </Link>
+                        </li>
+                        <li>
                             <Link href="/admin/system" className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white font-medium transition-colors">
                                 <ShieldCheck className="w-5 h-5" />
-                                账号与系统管理
+                                系统管理
                             </Link>
                         </li>
                     </ul>
