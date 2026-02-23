@@ -22,6 +22,7 @@ export default function PortalForm({ company, baseEmployees, alreadySubmitted, r
     const [isSuccess, setIsSuccess] = useState(alreadySubmitted);
 
     // Form states for dynamic calculation
+    const [baseHires, setBaseHires] = useState<number | string>(baseEmployees);
     const [newHires, setNewHires] = useState<number | string>(lastReport && alreadySubmitted ? lastReport.recruited_new : '');
     const [resignations, setResignations] = useState<number | string>(lastReport && alreadySubmitted ? lastReport.resigned_total : '');
     const [currentTotal, setCurrentTotal] = useState(baseEmployees);
@@ -49,12 +50,12 @@ export default function PortalForm({ company, baseEmployees, alreadySubmitted, r
         // If already submitted, the baseEmployees passed by server might be this month's number,
         // so we shouldn't add/subtract from it again if they are just viewing it.
         if (!alreadySubmitted) {
-            const calculatedTotal = baseEmployees + (Number(newHires) || 0) - (Number(resignations) || 0);
+            const calculatedTotal = (Number(baseHires) || 0) + (Number(newHires) || 0) - (Number(resignations) || 0);
             setCurrentTotal(Math.max(0, calculatedTotal));
         } else if (lastReport) {
             setCurrentTotal(lastReport.employees_total);
         }
-    }, [newHires, resignations, baseEmployees, alreadySubmitted, lastReport]);
+    }, [baseHires, newHires, resignations, alreadySubmitted, lastReport]);
 
     const displayMonth = reportMonth.slice(0, 7).replace('-', '年') + '月';
 
@@ -80,7 +81,7 @@ export default function PortalForm({ company, baseEmployees, alreadySubmitted, r
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mt-6 overflow-hidden">
             <div className="bg-blue-50/50 px-6 py-5 border-b border-gray-100 flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg font-bold text-gray-800">{displayMonth} 企业用工情况季报</h2>
+                    <h2 className="text-lg font-bold text-gray-800">{displayMonth} 企业用工情况月报</h2>
                     <p className="text-sm text-gray-500 mt-1">{company.name} ({company.industry})</p>
                 </div>
                 {alreadySubmitted && (
@@ -103,7 +104,24 @@ export default function PortalForm({ company, baseEmployees, alreadySubmitted, r
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                         <div>
                             <label className="block text-sm text-gray-500 mb-1">上月末在职人数</label>
-                            <div className="text-2xl font-semibold text-gray-700">{baseEmployees} <span className="text-sm font-normal text-gray-400">人</span></div>
+                            {!lastReport && !alreadySubmitted ? (
+                                <div>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={baseHires}
+                                        onChange={(e) => setBaseHires(e.target.value)}
+                                        className="w-full sm:w-2/3 px-3 py-2 border-2 border-blue-200 rounded-md focus:ring-blue-500 focus:border-blue-500 text-blue-800 font-bold bg-blue-50/50 outline-none"
+                                        placeholder="手工录入初次基数"
+                                    />
+                                    <p className="text-xs text-blue-500 mt-1 font-medium flex items-center gap-1">
+                                        <Info className="w-3 h-3" />
+                                        首次上报，须录入初始基数
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="text-2xl font-semibold text-gray-700">{baseEmployees} <span className="text-sm font-normal text-gray-400">人</span></div>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm text-gray-500 mb-1">本月新招人数</label>

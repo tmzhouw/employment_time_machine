@@ -8,6 +8,7 @@ export const metadata = {
 
 // Force dynamic so we get live progress data
 export const dynamic = 'force-dynamic';
+export const revalidate = 0; // Disable cache
 
 async function DashboardOverview() {
     const d = new Date();

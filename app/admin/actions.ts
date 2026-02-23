@@ -38,21 +38,29 @@ export async function getReportingStatus(reportMonth: string) {
     const companyIds = filteredCompanies.map(c => c.id);
 
     // 3. Fetch Current Month Reports
-    const { data: currentReports } = await supabaseAdmin
+    const { data: currentReports, error: currentReportsErr } = await supabaseAdmin
         .from('monthly_reports')
-        .select('company_id, status, current_employees, updated_at')
+        .select('company_id, status, employees_total, recruited_new, resigned_total, shortage_total, shortage_detail, planned_recruitment, updated_at')
         .eq('report_month', reportMonth)
         .in('company_id', companyIds);
 
+    if (currentReportsErr) {
+        console.error('[DEBUG] Error fetching current reports:', currentReportsErr);
+    }
+
     const reportMap = new Map((currentReports || []).map(r => [r.company_id, r]));
+
+    console.log(`[DEBUG] Fetched ${currentReports?.length} reports for month ${reportMonth}`);
+    const securityTestCorpId = '601e0c47-f8ba-4f5b-bdd4-89af34cc930f';
+    console.log('[DEBUG] Does map have Security Test Corp?', reportMap.has(securityTestCorpId), 'Data:', reportMap.get(securityTestCorpId));
 
     // 4. Fetch Previous Month Reports to calculate warnings
     const { data: prevReports } = await supabaseAdmin
         .from('monthly_reports')
-        .select('company_id, current_employees')
+        .select('company_id, employees_total')
         .eq('report_month', prevMonthStr)
         .in('company_id', companyIds)
-        .not('current_employees', 'is', null);
+        .not('employees_total', 'is', null);
 
     const prevReportMap = new Map((prevReports || []).map(r => [r.company_id, r]));
 
@@ -64,9 +72,9 @@ export async function getReportingStatus(reportMonth: string) {
         let hasWarning = false;
         let warningDetails = '';
 
-        if (report && report.current_employees && prevReport && prevReport.current_employees) {
-            const current = report.current_employees;
-            const previous = prevReport.current_employees;
+        if (report && report.employees_total !== undefined && prevReport && prevReport.employees_total !== undefined) {
+            const current = report.employees_total;
+            const previous = prevReport.employees_total;
             const changePercent = Math.abs((current - previous) / previous);
 
             if (changePercent >= 0.3) {
@@ -83,13 +91,28 @@ export async function getReportingStatus(reportMonth: string) {
             updatedAt: report ? report.updated_at : null,
             hasWarning,
             warningDetails,
-            currentEmployees: report?.current_employees || 0
+            currentEmployees: report?.employees_total || 0,
+            prevEmployees: prevReport?.employees_total !== undefined
+                ? prevReport.employees_total
+                : (report ? (report.employees_total - (report.recruited_new || 0) + (report.resigned_total || 0)) : 0),
+            recruitedNew: report?.recruited_new || 0,
+            resignedTotal: report?.resigned_total || 0,
+            shortageDetail: report?.shortage_detail || { general: 0, tech: 0, management: 0 },
+            plannedRecruitment: report?.planned_recruitment || 0
         };
     });
 }
 
-// Admin override to clear warning and manually approve
-export async function approveReport(companyId: string, reportMonth: string, correctedEmployees?: number) {
+// Admin override to clear warning and manually approve with granular data
+export async function approveReport(
+    companyId: string,
+    reportMonth: string,
+    correctedEmployees?: number,
+    recruitedNew?: number,
+    resignedTotal?: number,
+    shortageDetail?: { general: number, tech: number, management: number },
+    plannedRecruitment?: number
+) {
     const session = await getSession();
     if (!session || (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'TOWN_ADMIN')) {
         throw new Error('Unauthorized');
@@ -97,8 +120,17 @@ export async function approveReport(companyId: string, reportMonth: string, corr
 
     const updates: any = { status: 'APPROVED' };
     if (correctedEmployees !== undefined) {
-        updates.current_employees = correctedEmployees;
+        updates.employees_total = correctedEmployees;
     }
+    if (recruitedNew !== undefined) updates.recruited_new = recruitedNew;
+    if (resignedTotal !== undefined) updates.resigned_total = resignedTotal;
+
+    if (shortageDetail !== undefined) {
+        const total = (shortageDetail.general || 0) + (shortageDetail.tech || 0) + (shortageDetail.management || 0);
+        updates.shortage_detail = shortageDetail;
+        updates.shortage_total = total;
+    }
+    if (plannedRecruitment !== undefined) updates.planned_recruitment = plannedRecruitment;
 
     const { error } = await supabaseAdmin
         .from('monthly_reports')

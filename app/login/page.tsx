@@ -24,7 +24,7 @@ export default function LoginPage() {
                     <form action={formAction} className="space-y-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                统一社会信用代码 / 账号
+                                账号
                             </label>
                             <input
                                 type="text"
@@ -76,7 +76,7 @@ export default function LoginPage() {
                     </form>
 
                     <p className="mt-8 text-center text-sm text-gray-500">
-                        如果您遇到登录问题，请联系所在乡镇管理员
+                        如果您遇到登录问题，请联系管理员
                     </p>
                 </div>
             </div>

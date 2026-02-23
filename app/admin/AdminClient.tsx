@@ -8,6 +8,12 @@ export default function AdminClient({ initialData, reportMonth }: { initialData:
     const [searchTerm, setSearchTerm] = useState('');
     const [editingReport, setEditingReport] = useState<any>(null);
     const [correctedEmployees, setCorrectedEmployees] = useState<string>('');
+    const [recruitedNew, setRecruitedNew] = useState<string>('');
+    const [resignedTotal, setResignedTotal] = useState<string>('');
+    const [shortageGeneral, setShortageGeneral] = useState<string>('');
+    const [shortageTech, setShortageTech] = useState<string>('');
+    const [shortageMgmt, setShortageMgmt] = useState<string>('');
+    const [plannedRecruitment, setPlannedRecruitment] = useState<string>('');
     const [isSaving, setIsSaving] = useState(false);
 
     const filtered = initialData.filter(r =>
@@ -33,7 +39,15 @@ export default function AdminClient({ initialData, reportMonth }: { initialData:
             await approveReport(
                 editingReport.id,
                 reportMonth,
-                correctedEmployees ? parseInt(correctedEmployees, 10) : undefined
+                correctedEmployees ? parseInt(correctedEmployees, 10) : undefined,
+                recruitedNew ? parseInt(recruitedNew, 10) : 0,
+                resignedTotal ? parseInt(resignedTotal, 10) : 0,
+                {
+                    general: parseInt(shortageGeneral, 10) || 0,
+                    tech: parseInt(shortageTech, 10) || 0,
+                    management: parseInt(shortageMgmt, 10) || 0
+                },
+                parseInt(plannedRecruitment, 10) || 0
             );
             alert('数据已审核通过并入库');
             window.location.reload();
@@ -156,6 +170,12 @@ export default function AdminClient({ initialData, reportMonth }: { initialData:
                                             <button
                                                 onClick={() => {
                                                     setEditingReport(r);
+                                                    setRecruitedNew(r.recruitedNew?.toString() || '0');
+                                                    setResignedTotal(r.resignedTotal?.toString() || '0');
+                                                    setShortageGeneral(r.shortageDetail?.general?.toString() || '0');
+                                                    setShortageTech(r.shortageDetail?.tech?.toString() || '0');
+                                                    setShortageMgmt(r.shortageDetail?.management?.toString() || '0');
+                                                    setPlannedRecruitment(r.plannedRecruitment?.toString() || '0');
                                                     setCorrectedEmployees(r.currentEmployees.toString());
                                                 }}
                                                 className="text-indigo-600 hover:text-indigo-900 flex items-center gap-1 text-sm font-medium p-1.5 hover:bg-indigo-50 rounded-md transition-colors border border-transparent hover:border-indigo-100 shadow-sm shadow-transparent hover:shadow-indigo-100/50"
@@ -204,17 +224,128 @@ export default function AdminClient({ initialData, reportMonth }: { initialData:
                                 )}
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">本月在职总人数 (终审认定核实数值)</label>
-                                <input
-                                    type="number"
-                                    value={correctedEmployees}
-                                    onChange={e => setCorrectedEmployees(e.target.value)}
-                                    className="w-full px-4 py-3 border border-indigo-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none bg-indigo-50/30 transition-all text-lg font-mono text-indigo-900 shadow-inner"
-                                />
-                                <p className="text-xs text-gray-500 mt-2 flex items-start gap-1">
-                                    <span className="mt-0.5">ℹ️</span>
-                                    如果企业填报错误，请在此直接修改上述数字。点击下方按钮后，该数据将打上“管理员已审”标记并正式入库参与宏观统计。
+                            {/* Display Reference Number */}
+                            <div className="flex items-center gap-2 text-sm bg-indigo-50/50 p-3 rounded-lg border border-indigo-100/50">
+                                <span className="text-gray-500">📊 参考数据：</span>
+                                <span className="font-medium text-gray-700">
+                                    上月末在职 <span className="font-bold text-indigo-700">{editingReport.prevEmployees || 0}</span> 人
+                                </span>
+                            </div>
+
+                            {/* Core Audit Metrics */}
+                            <div className="space-y-4 pt-2">
+                                <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-100 pb-2">人员流动核实表</h4>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">本月新招入职</label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={recruitedNew}
+                                                onChange={e => {
+                                                    setRecruitedNew(e.target.value);
+                                                    const base = editingReport.prevEmployees || 0;
+                                                    const currentNew = parseInt(e.target.value || '0', 10);
+                                                    const currentResigned = parseInt(resignedTotal || '0', 10);
+                                                    setCorrectedEmployees(Math.max(0, base + currentNew - currentResigned).toString());
+                                                }}
+                                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-mono"
+                                            />
+                                            <span className="absolute right-3 top-2 text-gray-400 text-xs mt-0.5">人</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">本月离职流失</label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={resignedTotal}
+                                                onChange={e => {
+                                                    setResignedTotal(e.target.value);
+                                                    const base = editingReport.prevEmployees || 0;
+                                                    const currentNew = parseInt(recruitedNew || '0', 10);
+                                                    const currentResigned = parseInt(e.target.value || '0', 10);
+                                                    setCorrectedEmployees(Math.max(0, base + currentNew - currentResigned).toString());
+                                                }}
+                                                className="w-full px-3 py-2 border border-red-200 rounded-lg focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all font-mono"
+                                            />
+                                            <span className="absolute right-3 top-2 text-gray-400 text-xs mt-0.5">人</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex justify-between items-center">
+                                    <div>
+                                        <span className="block text-xs font-bold text-gray-600">本月末在职总数</span>
+                                        <span className="block text-[10px] text-gray-400">系统自动推算 (不可改)</span>
+                                    </div>
+                                    <div className="text-2xl font-mono font-bold text-indigo-700">
+                                        {correctedEmployees}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Service Needs */}
+                            <div className="space-y-4 pt-4 border-t border-gray-100">
+                                <h4 className="text-sm font-semibold text-gray-900 border-b border-gray-100 pb-2 flex justify-between items-center">
+                                    <span>企业服务诉求核实</span>
+                                    <span className="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-100">
+                                        缺编总计: {(parseInt(shortageGeneral, 10) || 0) + (parseInt(shortageTech, 10) || 0) + (parseInt(shortageMgmt, 10) || 0)} 人
+                                    </span>
+                                </h4>
+
+                                <div className="grid grid-cols-3 gap-3 mb-2">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-500 mb-1">缺普工</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={shortageGeneral}
+                                            onChange={e => setShortageGeneral(e.target.value)}
+                                            className="w-full px-2 py-1.5 border border-orange-200 rounded focus:ring-1 focus:ring-orange-500 outline-none font-mono text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-500 mb-1">缺技工</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={shortageTech}
+                                            onChange={e => setShortageTech(e.target.value)}
+                                            className="w-full px-2 py-1.5 border border-orange-200 rounded focus:ring-1 focus:ring-orange-500 outline-none font-mono text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-gray-500 mb-1">缺管理/销售</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={shortageMgmt}
+                                            onChange={e => setShortageMgmt(e.target.value)}
+                                            className="w-full px-2 py-1.5 border border-orange-200 rounded focus:ring-1 focus:ring-orange-500 outline-none font-mono text-sm"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">🎯 计划/急需招聘人数</label>
+                                    <div className="relative w-1/2">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={plannedRecruitment}
+                                            onChange={e => setPlannedRecruitment(e.target.value)}
+                                            className="w-full px-3 py-2 border-2 border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none font-bold text-orange-700"
+                                        />
+                                        <span className="absolute right-3 top-2.5 text-orange-400 text-xs mt-0.5">人</span>
+                                    </div>
+                                </div>
+
+                                <p className="text-xs text-gray-500 leading-relaxed bg-orange-50/50 p-2 rounded border border-orange-100/50 mt-4">
+                                    ℹ️ 缺工结构将自动求和计入企业用工大盘。以上修改数据后点击立卷，将作为政府服务的权威认定值。
                                 </p>
                             </div>
                         </div>

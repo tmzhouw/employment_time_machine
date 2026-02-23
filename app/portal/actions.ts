@@ -59,7 +59,7 @@ export async function submitReport(prevState: any, formData: FormData) {
         planned_recruitment: plannedRecruitment,
         salary_general: salaryGeneral,
         salary_tech: salaryTech,
-        status: 'PENDING', // Initially pending until admin approves
+        status: 'SUBMITTED', // Mark as submitted so admin dashboard detects it as filled
         notes: 'Submitted via Enterprise Portal'
     };
 
@@ -98,6 +98,7 @@ export async function submitReport(prevState: any, formData: FormData) {
         }
 
         revalidatePath('/portal');
+        revalidatePath('/admin');
         return { success: true };
 
     } catch (err: any) {
