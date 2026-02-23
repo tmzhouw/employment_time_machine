@@ -40,7 +40,7 @@ export async function getReportingStatus(reportMonth: string) {
     // 3. Fetch Current Month Reports
     const { data: currentReports, error: currentReportsErr } = await supabaseAdmin
         .from('monthly_reports')
-        .select('company_id, status, employees_total, recruited_new, resigned_total, shortage_total, shortage_detail, planned_recruitment, updated_at')
+        .select('company_id, status, employees_total, recruited_new, resigned_total, shortage_total, shortage_detail, planned_recruitment, updated_at, reject_reason')
         .eq('report_month', reportMonth)
         .in('company_id', companyIds);
 
@@ -49,10 +49,6 @@ export async function getReportingStatus(reportMonth: string) {
     }
 
     const reportMap = new Map((currentReports || []).map(r => [r.company_id, r]));
-
-    console.log(`[DEBUG] Fetched ${currentReports?.length} reports for month ${reportMonth}`);
-    const securityTestCorpId = '601e0c47-f8ba-4f5b-bdd4-89af34cc930f';
-    console.log('[DEBUG] Does map have Security Test Corp?', reportMap.has(securityTestCorpId), 'Data:', reportMap.get(securityTestCorpId));
 
     // 4. Fetch Previous Month Reports to calculate warnings
     const { data: prevReports } = await supabaseAdmin
@@ -98,7 +94,8 @@ export async function getReportingStatus(reportMonth: string) {
             recruitedNew: report?.recruited_new || 0,
             resignedTotal: report?.resigned_total || 0,
             shortageDetail: report?.shortage_detail || { general: 0, tech: 0, management: 0 },
-            plannedRecruitment: report?.planned_recruitment || 0
+            plannedRecruitment: report?.planned_recruitment || 0,
+            rejectReason: report?.reject_reason || null
         };
     });
 }
@@ -146,6 +143,43 @@ export async function approveReport(
         action: 'EDIT_REPORT_DATA',
         target_company_id: companyId,
         details: { reportMonth, correctedEmployees, action: 'APPROVED' }
+    });
+
+    revalidatePath('/admin');
+    return { success: true };
+}
+
+export async function rejectReport(
+    companyId: string,
+    reportMonth: string,
+    reason: string
+) {
+    const session = await getSession();
+    if (!session || (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'TOWN_ADMIN')) {
+        throw new Error('Unauthorized');
+    }
+
+    if (!reason || reason.trim().length === 0) {
+        throw new Error('必须填写驳回原因');
+    }
+
+    const { error } = await supabaseAdmin
+        .from('monthly_reports')
+        .update({
+            status: 'REJECTED',
+            reject_reason: reason.trim()
+        })
+        .eq('company_id', companyId)
+        .eq('report_month', reportMonth);
+
+    if (error) throw new Error(error.message);
+
+    // Audit log
+    await supabaseAdmin.from('admin_audit_logs').insert({
+        admin_id: session.user.id,
+        action: 'REJECT_REPORT',
+        target_company_id: companyId,
+        details: { reportMonth, reason: reason.trim() }
     });
 
     revalidatePath('/admin');

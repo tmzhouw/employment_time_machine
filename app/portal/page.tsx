@@ -57,12 +57,21 @@ export default async function PortalPage() {
     // Check if what they reported last was this exact month
     let alreadySubmitted = false;
     let baseEmployees = 0;
+    let rejectReason: string | null = null;
 
     if (lastReport) {
         const lastReportMonth = new Date(lastReport.report_month).toISOString().slice(0, 7);
         if (lastReportMonth === currentMonthPrefix) {
-            alreadySubmitted = true;
-            baseEmployees = lastReport.employees_total;
+            // If rejected, allow re-editing
+            if (lastReport.status === 'REJECTED') {
+                alreadySubmitted = false;
+                rejectReason = lastReport.reject_reason || '数据有误，请重新填写';
+                // Use previous month's data as base if available, otherwise derive from current report
+                baseEmployees = lastReport.employees_total - (lastReport.recruited_new || 0) + (lastReport.resigned_total || 0);
+            } else {
+                alreadySubmitted = true;
+                baseEmployees = lastReport.employees_total;
+            }
         } else {
             // It's a previous month, use it as baseline
             baseEmployees = lastReport.employees_total;
@@ -76,6 +85,7 @@ export default async function PortalPage() {
             alreadySubmitted={alreadySubmitted}
             reportMonth={reportMonth}
             lastReport={lastReport}
+            rejectReason={rejectReason}
         />
     );
 }

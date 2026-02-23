@@ -1,7 +1,7 @@
 import { getSession, logout } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import { LayoutDashboard, Users, LogOut, Building2, ShieldCheck } from 'lucide-react';
-import Link from 'next/link';
+import { LayoutDashboard, LogOut } from 'lucide-react';
+import AdminNav from './AdminNav';
 
 export default async function AdminLayout({
     children,
@@ -26,34 +26,7 @@ export default async function AdminLayout({
                     <p className="mt-1 text-sm text-slate-500">运行监测系统</p>
                 </div>
 
-                <nav className="p-4 flex-1">
-                    <ul className="space-y-1">
-                        <li>
-                            <Link href="/admin" className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white font-medium transition-colors">
-                                <LayoutDashboard className="w-5 h-5" />
-                                填报管理
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/admin/enterprises" className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white font-medium transition-colors">
-                                <Building2 className="w-5 h-5" />
-                                企业管理
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/admin/accounts" className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white font-medium transition-colors">
-                                <Users className="w-5 h-5" />
-                                账号管理
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/admin/system" className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white font-medium transition-colors">
-                                <ShieldCheck className="w-5 h-5" />
-                                系统管理
-                            </Link>
-                        </li>
-                    </ul>
-                </nav>
+                <AdminNav />
 
                 <div className="p-4 border-t border-slate-800">
                     <div className="flex items-center gap-3 px-3 py-2 mb-2">
