@@ -36,6 +36,7 @@ async function _fetchViaPostgres(): Promise<any[]> {
             ) as companies
         FROM monthly_reports mr
         JOIN companies c ON mr.company_id = c.id
+        WHERE mr.status != 'PENDING' OR mr.status IS NULL
         ORDER BY mr.id ASC
     `);
     console.log(`[PG] Fetched ${result.rows.length} records from PostgreSQL`);
@@ -78,6 +79,7 @@ async function _fetchViaSupabase(): Promise<any[]> {
                 *,
                 companies (name, industry, town)
             `)
+            .neq('status', 'PENDING')
             .order('id', { ascending: true })
             .range(from, to);
 
