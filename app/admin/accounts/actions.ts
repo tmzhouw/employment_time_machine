@@ -11,7 +11,7 @@ export async function getAccountData() {
         throw new Error('只有超级管理员可以访问此页面');
     }
 
-    // Fetch Managers (TOWN_ADMIN role acting as Reporting Admins)
+    // 1. Fetch Managers (TOWN_ADMIN)
     const { data: managers, error: mgrErr } = await supabaseAdmin
         .from('auth_users')
         .select('id, username, is_active, last_login')
@@ -20,8 +20,44 @@ export async function getAccountData() {
 
     if (mgrErr) throw new Error(mgrErr.message);
 
+    // 2. Fetch Enterprise accounts (ENTERPRISE) with company info
+    const { data: enterprises, error: entErr } = await supabaseAdmin
+        .from('auth_users')
+        .select('id, username, is_active, last_login, company_id')
+        .eq('role', 'ENTERPRISE')
+        .order('created_at', { ascending: false });
+
+    if (entErr) throw new Error(entErr.message);
+
+    // Fetch company names for enterprise accounts
+    const companyIds = (enterprises || []).map(e => e.company_id).filter(Boolean);
+    let companyMap = new Map<string, string>();
+    if (companyIds.length > 0) {
+        const { data: companies } = await supabaseAdmin
+            .from('companies')
+            .select('id, name')
+            .in('id', companyIds);
+        companyMap = new Map((companies || []).map(c => [c.id, c.name]));
+    }
+
+    const enterprisesWithNames = (enterprises || []).map(e => ({
+        ...e,
+        companyName: companyMap.get(e.company_id) || '未关联'
+    }));
+
+    // 3. Fetch Super Admins (SUPER_ADMIN)
+    const { data: admins, error: admErr } = await supabaseAdmin
+        .from('auth_users')
+        .select('id, username, is_active, last_login')
+        .eq('role', 'SUPER_ADMIN')
+        .order('created_at', { ascending: false });
+
+    if (admErr) throw new Error(admErr.message);
+
     return {
-        managers
+        managers,
+        enterprises: enterprisesWithNames,
+        admins
     };
 }
 
@@ -32,7 +68,7 @@ export async function createManager(prevState: any, formData: FormData) {
     }
 
     const username = formData.get('username') as string;
-    const desc = formData.get('desc') as string; // Optional description/name mapped to 'town' column for legacy compatibility
+    const desc = formData.get('desc') as string;
 
     if (!username || username.length < 4) {
         return { error: '账号名称必须至少4个字符' };
@@ -49,7 +85,6 @@ export async function createManager(prevState: any, formData: FormData) {
 
         const defaultPasswordHash = await bcrypt.hash('123456', 10);
 
-        // We reuse the 'town' column to store the manager's display name or region desc
         const { data: newUser, error: createErr } = await supabaseAdmin
             .from('auth_users')
             .insert({
@@ -63,7 +98,6 @@ export async function createManager(prevState: any, formData: FormData) {
 
         if (createErr) throw new Error(createErr.message);
 
-        // Log it
         await supabaseAdmin.from('admin_audit_logs').insert({
             admin_id: session.user.id,
             action: 'CREATE_MANAGER',
@@ -102,7 +136,37 @@ export async function resetManagerPassword(userId: string) {
         admin_id: session.user.id,
         action: 'RESET_PASSWORD',
         target_user_id: userId,
-        details: { action: 'Force reset to 123456' }
+        details: { action: 'Force reset to 123456', role: 'TOWN_ADMIN' }
+    });
+
+    revalidatePath('/admin/accounts');
+    return { success: true };
+}
+
+export async function resetEnterprisePassword(userId: string) {
+    const session = await getSession();
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
+        throw new Error('未授权');
+    }
+
+    const defaultPasswordHash = await bcrypt.hash('123456', 10);
+
+    const { error } = await supabaseAdmin
+        .from('auth_users')
+        .update({
+            password_hash: defaultPasswordHash,
+            must_change_password: true
+        })
+        .eq('id', userId)
+        .eq('role', 'ENTERPRISE');
+
+    if (error) throw new Error(error.message);
+
+    await supabaseAdmin.from('admin_audit_logs').insert({
+        admin_id: session.user.id,
+        action: 'RESET_PASSWORD',
+        target_user_id: userId,
+        details: { action: 'Force reset to 123456', role: 'ENTERPRISE' }
     });
 
     revalidatePath('/admin/accounts');
@@ -119,7 +183,6 @@ export async function changeAdminPassword(oldRaw: string, newRaw: string) {
         throw new Error('新密码太短 (至少6位)');
     }
 
-    // Verify old password
     const { data: user } = await supabaseAdmin
         .from('auth_users')
         .select('password_hash')
