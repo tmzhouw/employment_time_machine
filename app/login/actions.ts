@@ -39,6 +39,10 @@ export async function authenticateForm(prevState: any, formData: FormData) {
             return { error: '账号或密码错误 (User not found)' };
         }
 
+        if (!user.is_active) {
+            return { error: '账号已被冻结，请联系相关政府主管单位' };
+        }
+
         const passwordsMatch = await bcrypt.compare(password, user.password_hash);
 
         if (!passwordsMatch) {
@@ -50,7 +54,8 @@ export async function authenticateForm(prevState: any, formData: FormData) {
             id: user.id,
             username: user.username,
             role: user.role,
-            companyId: user.company_id
+            companyId: user.company_id,
+            mustChangePassword: user.must_change_password
         });
 
         // Update last login
@@ -65,7 +70,11 @@ export async function authenticateForm(prevState: any, formData: FormData) {
         return { error: '系统错误，请稍后再试' };
     }
 
-    // Redirect based on role
+    // Redirect based on role and must_change_password flag
+    if (user.must_change_password) {
+        redirect('/portal/profile'); // Force them to the profile page to change password
+    }
+
     if (user.role === 'SUPER_ADMIN' || user.role === 'TOWN_ADMIN') {
         redirect('/admin');
     } else {

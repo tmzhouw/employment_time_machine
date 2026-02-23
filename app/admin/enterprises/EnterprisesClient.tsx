@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Search, Plus, Edit2, ShieldAlert } from 'lucide-react';
+import { useState, useCallback, useTransition } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { Search, Plus, Edit2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { updateEnterpriseData } from './actions';
 import { useFormStatus } from 'react-dom';
 
@@ -18,20 +19,60 @@ function SubmitButton({ pendingStr = "保存中...", defaultStr = "保存" }: { 
     );
 }
 
-export default function EnterprisesClient({ initialData, managers, createAction }: { initialData: any[], managers: any[], createAction: any }) {
-    const [searchTerm, setSearchTerm] = useState('');
+export default function EnterprisesClient({
+    initialData,
+    managers,
+    totalCount,
+    currentPage,
+    searchTerm,
+    createAction
+}: {
+    initialData: any[],
+    managers: any[],
+    totalCount: number,
+    currentPage: number,
+    searchTerm: string,
+    createAction: any
+}) {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const [isPending, startTransition] = useTransition();
+
+    const [searchInput, setSearchInput] = useState(searchTerm);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+    const pageSize = 15;
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+    const createQueryString = useCallback(
+        (name: string, value: string) => {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set(name, value);
+            return params.toString();
+        },
+        [searchParams]
+    );
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        startTransition(() => {
+            router.push(`${pathname}?${createQueryString('search', searchInput)}&page=1`);
+        });
+    };
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            startTransition(() => {
+                router.push(`${pathname}?${createQueryString('page', newPage.toString())}`);
+            });
+        }
+    };
 
     // Edit Modal State
     const [editingCompany, setEditingCompany] = useState<any>(null);
     const [editPayload, setEditPayload] = useState<any>({});
     const [editError, setEditError] = useState('');
-
-    const filtered = initialData.filter(c =>
-        c.name.includes(searchTerm) ||
-        c.town.includes(searchTerm) ||
-        (c.contact_phone && c.contact_phone.includes(searchTerm))
-    );
 
     const handleEditSave = async () => {
         setEditError('');
@@ -48,16 +89,21 @@ export default function EnterprisesClient({ initialData, managers, createAction 
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="relative max-w-md w-full">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                        type="text"
-                        placeholder="搜索企业名称、乡镇或手机号..."
-                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow outline-none"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
+                <form onSubmit={handleSearch} className="relative max-w-md w-full flex gap-2">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <input
+                            type="text"
+                            placeholder="搜索企业名称、手机号..."
+                            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow outline-none"
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                        />
+                    </div>
+                    <button type="submit" className="px-4 py-2 bg-gray-100 font-medium text-gray-700 rounded-lg hover:bg-gray-200 border border-gray-200">
+                        搜索
+                    </button>
+                </form>
 
                 <button
                     onClick={() => setIsAddModalOpen(true)}
@@ -76,14 +122,14 @@ export default function EnterprisesClient({ initialData, managers, createAction 
                                 <th className="px-6 py-4 text-sm font-semibold text-slate-600">企业名称</th>
                                 <th className="px-6 py-4 text-sm font-semibold text-slate-600">所属行业</th>
                                 <th className="px-6 py-4 text-sm font-semibold text-slate-600">联系人</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-slate-600">HR 手机 (登录账号)</th>
+                                <th className="px-6 py-4 text-sm font-semibold text-slate-600">HR 手机 (账号)</th>
                                 <th className="px-6 py-4 text-sm font-semibold text-slate-600">责任专员</th>
                                 <th className="px-6 py-4 text-sm font-semibold text-slate-600">账号状态</th>
                                 <th className="px-6 py-4 text-sm font-semibold text-slate-600 w-32">操作</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {filtered.map((comp) => (
+                        <tbody className={`divide-y divide-gray-50 ${isPending ? 'opacity-50 pointer-events-none' : ''}`}>
+                            {initialData.map((comp) => (
                                 <tr key={comp.id} className="hover:bg-slate-50/50 transition-colors">
                                     <td className="px-6 py-4 font-medium text-gray-900">{comp.name}</td>
                                     <td className="px-6 py-4 text-gray-600">{comp.town}</td>
@@ -134,15 +180,41 @@ export default function EnterprisesClient({ initialData, managers, createAction 
                                     </td>
                                 </tr>
                             ))}
-                            {filtered.length === 0 && (
+                            {initialData.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                                         未找到匹配的企业
                                     </td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Pagination Controls */}
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                    <p className="text-sm text-gray-500">
+                        共找到 <span className="font-semibold text-gray-900">{totalCount}</span> 条记录
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1 || isPending}
+                            className="p-1 rounded-md text-gray-500 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <span className="text-sm font-medium text-gray-700">
+                            {currentPage} / {totalPages}
+                        </span>
+                        <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages || isPending}
+                            className="p-1 rounded-md text-gray-500 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
             </div>
 

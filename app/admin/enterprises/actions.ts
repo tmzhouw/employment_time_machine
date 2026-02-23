@@ -5,27 +5,46 @@ import { getSession } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 
-export async function getEnterprises() {
+export async function getEnterprises(page: number = 1, search: string = '') {
     const session = await getSession();
     if (!session || (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'TOWN_ADMIN')) {
         throw new Error('Unauthorized');
     }
 
-    const { data: companies, error } = await supabaseAdmin
+    const pageSize = 15;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabaseAdmin
         .from('companies')
         .select(`
             *,
             auth_users!companies_manager_id_fkey(username)
-        `)
-        .order('created_at', { ascending: false });
+        `, { count: 'exact' });
+
+    if (search) {
+        // Simple search on company name or phone
+        query = query.or(`name.ilike.%${search}%,contact_phone.ilike.%${search}%`);
+    }
+
+    const { data: companies, count, error } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
     if (error) throw new Error(error.message);
 
-    // Fetch related auth statuses
+    // If no companies found, avoid querying auth_users with empty array
+    if (!companies || companies.length === 0) {
+        return { companies: [], managers: [], totalCount: count || 0 };
+    }
+
+    // Fetch related auth statuses only for the paginated companies
+    const companyIds = companies.map(c => c.id);
     const { data: users, error: uErr } = await supabaseAdmin
         .from('auth_users')
         .select('id, company_id, username, is_active, last_login')
-        .eq('role', 'ENTERPRISE');
+        .eq('role', 'ENTERPRISE')
+        .in('company_id', companyIds);
 
     if (uErr) throw new Error(uErr.message);
 
@@ -45,7 +64,8 @@ export async function getEnterprises() {
             manager_username: c.auth_users?.username || '未分配',
             auth: userMap.get(c.id) || null
         })),
-        managers
+        managers,
+        totalCount: count || 0
     };
 }
 
@@ -97,7 +117,8 @@ export async function createEnterprise(prevState: any, formData: FormData) {
                 company_id: newCompany.id,
                 username: phone, // using phone as username directly
                 password_hash: defaultPasswordHash,
-                role: 'ENTERPRISE'
+                role: 'ENTERPRISE',
+                must_change_password: true
             });
 
         if (authErr) {

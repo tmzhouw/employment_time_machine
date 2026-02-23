@@ -8,12 +8,25 @@ export const metadata = {
 };
 
 // Extracted async data fetcher for Suspense
-async function EnterpriseList() {
-    const data = await getEnterprises();
-    return <EnterprisesClient initialData={data.companies} managers={data.managers} createAction={createEnterprise} />;
+async function EnterpriseList({ page, search }: { page: number, search: string }) {
+    const data = await getEnterprises(page, search);
+    return (
+        <EnterprisesClient
+            initialData={data.companies}
+            managers={data.managers}
+            totalCount={data.totalCount}
+            currentPage={page}
+            searchTerm={search}
+            createAction={createEnterprise}
+        />
+    );
 }
 
-export default function EnterprisesPage() {
+export default async function EnterprisesPage(props: { searchParams?: Promise<{ page?: string; search?: string }> }) {
+    const searchParams = await props.searchParams;
+    const page = Number(searchParams?.page) || 1;
+    const search = searchParams?.search || '';
+
     return (
         <div className="max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8">
@@ -26,13 +39,13 @@ export default function EnterprisesPage() {
                 </p>
             </div>
 
-            <Suspense fallback={
+            <Suspense key={`${page}-${search}`} fallback={
                 <div className="animate-pulse space-y-4">
                     <div className="h-10 bg-gray-200 rounded-lg w-1/3"></div>
                     <div className="h-64 bg-gray-100 rounded-xl"></div>
                 </div>
             }>
-                <EnterpriseList />
+                <EnterpriseList page={page} search={search} />
             </Suspense>
         </div>
     );

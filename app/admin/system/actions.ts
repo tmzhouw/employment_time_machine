@@ -75,7 +75,8 @@ export async function createManager(prevState: any, formData: FormData) {
             .insert({
                 username,
                 password_hash: defaultPasswordHash,
-                role: 'TOWN_ADMIN'
+                role: 'TOWN_ADMIN',
+                must_change_password: true
             })
             .select()
             .single();
@@ -108,7 +109,10 @@ export async function resetManagerPassword(userId: string) {
 
     const { error } = await supabaseAdmin
         .from('auth_users')
-        .update({ password_hash: defaultPasswordHash })
+        .update({
+            password_hash: defaultPasswordHash,
+            must_change_password: true
+        })
         .eq('id', userId)
         .eq('role', 'TOWN_ADMIN');
 
