@@ -41,28 +41,28 @@ export async function getReportingStatus(reportMonth: string) {
 
     const companyIds = filteredCompanies.map(c => c.id);
 
-    // 3. Fetch Current Month Reports
-    const { data: currentReports, error: currentReportsErr } = await supabaseAdmin
-        .from('monthly_reports')
-        .select('company_id, status, employees_total, recruited_new, resigned_total, shortage_total, shortage_detail, planned_recruitment, updated_at, reject_reason')
-        .eq('report_month', reportMonth)
-        .in('company_id', companyIds);
+    // 3 & 4. Fetch Current and Previous Month Reports Concurrently
+    const [currentReportsResp, prevReportsResp] = await Promise.all([
+        supabaseAdmin
+            .from('monthly_reports')
+            .select('company_id, status, employees_total, recruited_new, resigned_total, shortage_total, shortage_detail, planned_recruitment, updated_at, reject_reason')
+            .eq('report_month', reportMonth)
+            .in('company_id', companyIds),
 
-    if (currentReportsErr) {
-        console.error('[DEBUG] Error fetching current reports:', currentReportsErr);
+        supabaseAdmin
+            .from('monthly_reports')
+            .select('company_id, employees_total')
+            .eq('report_month', prevMonthStr)
+            .in('company_id', companyIds)
+            .not('employees_total', 'is', null)
+    ]);
+
+    if (currentReportsResp.error) {
+        console.error('[DEBUG] Error fetching current reports:', currentReportsResp.error);
     }
 
-    const reportMap = new Map((currentReports || []).map(r => [r.company_id, r]));
-
-    // 4. Fetch Previous Month Reports to calculate warnings
-    const { data: prevReports } = await supabaseAdmin
-        .from('monthly_reports')
-        .select('company_id, employees_total')
-        .eq('report_month', prevMonthStr)
-        .in('company_id', companyIds)
-        .not('employees_total', 'is', null);
-
-    const prevReportMap = new Map((prevReports || []).map(r => [r.company_id, r]));
+    const reportMap = new Map((currentReportsResp.data || []).map(r => [r.company_id, r]));
+    const prevReportMap = new Map((prevReportsResp.data || []).map(r => [r.company_id, r]));
 
     // 5. Determine which companies to show:
     //    - Current month: show ALL companies (to track who hasn't reported yet)

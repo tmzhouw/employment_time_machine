@@ -18,10 +18,10 @@ async function AccountsOverview() {
 
 export default function AccountsPage() {
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 h-[calc(100vh-4rem)] flex flex-col">
+        <div className="p-6 md:p-8 max-w-[1600px] w-full mx-auto flex flex-col min-h-[calc(100vh-4rem)]">
             <div className="mb-6 shrink-0">
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    <Users className="w-7 h-7 text-indigo-600" />
+                    <Users className="w-7 h-7 text-blue-500" />
                     账号管理
                 </h1>
                 <p className="text-gray-500 mt-2">

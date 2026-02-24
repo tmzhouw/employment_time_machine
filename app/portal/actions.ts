@@ -59,6 +59,7 @@ export async function submitReport(prevState: any, formData: FormData) {
         planned_recruitment: plannedRecruitment,
         salary_general: salaryGeneral,
         salary_tech: salaryTech,
+        salary_mgmt: salaryMgmt,
         status: 'SUBMITTED', // Mark as submitted so admin dashboard detects it as filled
         notes: 'Submitted via Enterprise Portal'
     };
@@ -68,8 +69,8 @@ export async function submitReport(prevState: any, formData: FormData) {
         if (pool) {
             await pool.query(
                 `INSERT INTO monthly_reports 
-               (company_id, report_month, employees_total, recruited_new, resigned_total, shortage_total, shortage_detail, planned_recruitment, salary_general, salary_tech, status, notes) 
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+               (company_id, report_month, employees_total, recruited_new, resigned_total, shortage_total, shortage_detail, planned_recruitment, salary_general, salary_tech, salary_mgmt, status, notes) 
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
                ON CONFLICT (company_id, report_month) 
                DO UPDATE SET 
                   employees_total = EXCLUDED.employees_total,
@@ -80,13 +81,14 @@ export async function submitReport(prevState: any, formData: FormData) {
                   planned_recruitment = EXCLUDED.planned_recruitment,
                   salary_general = EXCLUDED.salary_general,
                   salary_tech = EXCLUDED.salary_tech,
+                  salary_mgmt = EXCLUDED.salary_mgmt,
                   status = EXCLUDED.status,
                   notes = EXCLUDED.notes,
                   updated_at = NOW()`,
                 [
                     payload.company_id, payload.report_month, payload.employees_total,
                     payload.recruited_new, payload.resigned_total, payload.shortage_total, payload.shortage_detail,
-                    payload.planned_recruitment, payload.salary_general, payload.salary_tech, payload.status, payload.notes
+                    payload.planned_recruitment, payload.salary_general, payload.salary_tech, payload.salary_mgmt, payload.status, payload.notes
                 ]
             );
         } else {

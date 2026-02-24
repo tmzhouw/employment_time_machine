@@ -11,26 +11,37 @@ export async function getAccountData() {
         throw new Error('只有超级管理员可以访问此页面');
     }
 
-    // 1. Fetch Managers (TOWN_ADMIN)
-    const { data: managers, error: mgrErr } = await supabaseAdmin
-        .from('auth_users')
-        .select('id, username, is_active, last_login')
-        .eq('role', 'TOWN_ADMIN')
-        .order('created_at', { ascending: false });
+    // 1 & 2 & 3. Fetch Managers, Enterprises, and Admins Concurrently
+    const [managersResp, enterprisesResp, adminsResp] = await Promise.all([
+        supabaseAdmin
+            .from('auth_users')
+            .select('id, username, is_active, last_login')
+            .eq('role', 'TOWN_ADMIN')
+            .order('created_at', { ascending: false }),
 
-    if (mgrErr) throw new Error(mgrErr.message);
+        supabaseAdmin
+            .from('auth_users')
+            .select('id, username, is_active, last_login, company_id')
+            .eq('role', 'ENTERPRISE')
+            .order('created_at', { ascending: false }),
 
-    // 2. Fetch Enterprise accounts (ENTERPRISE) with company info
-    const { data: enterprises, error: entErr } = await supabaseAdmin
-        .from('auth_users')
-        .select('id, username, is_active, last_login, company_id')
-        .eq('role', 'ENTERPRISE')
-        .order('created_at', { ascending: false });
+        supabaseAdmin
+            .from('auth_users')
+            .select('id, username, is_active, last_login')
+            .eq('role', 'SUPER_ADMIN')
+            .order('created_at', { ascending: false })
+    ]);
 
-    if (entErr) throw new Error(entErr.message);
+    if (managersResp.error) throw new Error(managersResp.error.message);
+    if (enterprisesResp.error) throw new Error(enterprisesResp.error.message);
+    if (adminsResp.error) throw new Error(adminsResp.error.message);
 
-    // Fetch company names for enterprise accounts
-    const companyIds = (enterprises || []).map(e => e.company_id).filter(Boolean);
+    const managers = managersResp.data || [];
+    const enterprises = enterprisesResp.data || [];
+    const admins = adminsResp.data || [];
+
+    // 4. Fetch company names for enterprise accounts
+    const companyIds = enterprises.map(e => e.company_id).filter(Boolean);
     let companyMap = new Map<string, string>();
     if (companyIds.length > 0) {
         const { data: companies } = await supabaseAdmin
@@ -40,19 +51,10 @@ export async function getAccountData() {
         companyMap = new Map((companies || []).map(c => [c.id, c.name]));
     }
 
-    const enterprisesWithNames = (enterprises || []).map(e => ({
+    const enterprisesWithNames = enterprises.map(e => ({
         ...e,
         companyName: companyMap.get(e.company_id) || '未关联'
     }));
-
-    // 3. Fetch Super Admins (SUPER_ADMIN)
-    const { data: admins, error: admErr } = await supabaseAdmin
-        .from('auth_users')
-        .select('id, username, is_active, last_login')
-        .eq('role', 'SUPER_ADMIN')
-        .order('created_at', { ascending: false });
-
-    if (admErr) throw new Error(admErr.message);
 
     return {
         managers,

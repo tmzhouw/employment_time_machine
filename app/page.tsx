@@ -65,17 +65,28 @@ export default async function DashboardPage(props: PageProps) {
 
                 {/* 1. Leader Cockpit Metrics */}
                 <section>
-                    <MainSectionHeader number="一" title="全市用工概览 (2025全年)" />
+                    <MainSectionHeader number="一" title={`全市用工概览 (${summary.dataYear}全年)`} />
                     <div className="mb-4 md:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
                         <div>
                             <p className="text-slate-500 text-xs md:text-sm mt-1">数据来源：全市重点企业直报数据 (已校准)</p>
                         </div>
                         <div className="text-left sm:text-right">
                             <span className="inline-flex items-center px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs font-medium bg-emerald-100 text-emerald-800">
-                                数据已更新至 12月
+                                数据已更新至 {summary.latestMonthStr}
                             </span>
                         </div>
                     </div>
+
+                    {summary.isFallback && (
+                        <div className="mb-6 flex items-start gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                            <AlertCircle className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+                            <div className="text-sm text-orange-800">
+                                <span className="font-bold">温馨提示：</span>
+                                {summary.skippedMonthStr}数据采集中 (当前企业填报率 <span className="font-bold text-orange-600">{summary.latestMonthRatePct}%</span>)，
+                                为保证大盘准确性，各项指标暂展示 <span className="font-bold">{summary.latestMonthStr}</span> 完整数据。企业数据名单可在“管理后台”实时查看。
+                            </div>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
                         <MetricCard
@@ -88,7 +99,7 @@ export default async function DashboardPage(props: PageProps) {
                             title="在岗员工总数"
                             value={summary.avg_employment.toLocaleString()}
                             unit="人"
-                            subLabel="12月底实有"
+                            subLabel={`截至${summary.latestMonthStr}底实有`}
                         />
                         <MetricCard
                             title="企业缺工率"

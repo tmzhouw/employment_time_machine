@@ -1,6 +1,7 @@
 import { getReportingStatus } from './actions';
 import AdminClient from './AdminClient';
 import { Suspense } from 'react';
+import { ClipboardList } from 'lucide-react';
 
 export const metadata = {
     title: '填报管理 - 政府管理后台',
@@ -32,9 +33,12 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
     const [yearStr, monthStr] = reportMonth.split('-');
 
     return (
-        <div className="p-6 max-w-7xl mx-auto space-y-6">
-            <div>
-                <h2 className="text-2xl font-bold text-gray-900">{yearStr}年{monthStr}月 填报与波动预警管理</h2>
+        <div className="p-6 md:p-8 max-w-[1600px] w-full mx-auto flex flex-col min-h-[calc(100vh-4rem)] gap-6">
+            <div className="shrink-0">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    <ClipboardList className="w-7 h-7 text-blue-500" />
+                    {yearStr}年{monthStr}月 填报与波动预警管理
+                </h2>
                 <p className="text-gray-500 mt-1">实时追踪所辖企业用工直报情况，对数据异动进行人工审核归档</p>
             </div>
 

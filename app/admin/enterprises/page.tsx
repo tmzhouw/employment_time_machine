@@ -28,10 +28,10 @@ export default async function EnterprisesPage(props: { searchParams?: Promise<{ 
     const search = searchParams?.search || '';
 
     return (
-        <div className="max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-            <div className="mb-8">
+        <div className="p-6 md:p-8 max-w-[1600px] w-full mx-auto flex flex-col min-h-[calc(100vh-4rem)]">
+            <div className="mb-8 shrink-0">
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    <Building2 className="w-7 h-7 text-indigo-600" />
+                    <Building2 className="w-7 h-7 text-blue-500" />
                     企业底座档案管理
                 </h1>
                 <p className="text-gray-500 mt-2">

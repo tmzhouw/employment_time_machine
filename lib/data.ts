@@ -140,22 +140,27 @@ export async function getTrendData(filters?: { industry?: string, town?: string 
     // Sort logic needs date objects
     filteredData.sort((a, b) => new Date(a.report_month).getTime() - new Date(b.report_month).getTime());
 
-    // Filter for current/latest year to avoid summing across years
-    const currentYear = new Date().getFullYear().toString();
-    const allSortedDates = [...new Set(filteredData.map(d => d.report_month))].sort();
-    const latestAvailableDate = allSortedDates[allSortedDates.length - 1];
+    // Distinct companies count
+    const uniqueCompanyIds = new Set(filteredData.map(d => d.company_id));
+    const total_enterprises = uniqueCompanyIds.size;
 
-    // Safety check: if no data, return empty
-    if (!latestAvailableDate) return [];
+    // THRESHOLD LOGIC
+    const validMonthInfo = getValidatedLatestMonth(allData, filteredData, total_enterprises);
+    if (!validMonthInfo) return [];
 
-    const targetYear = latestAvailableDate.startsWith(currentYear) ? currentYear : (latestAvailableDate.substring(0, 4) || currentYear);
+    const validatedMonth = validMonthInfo.month;
+    const targetYear = new Date(validatedMonth).getFullYear().toString();
 
-    const yearData = filteredData.filter(d => d.report_month.startsWith(targetYear));
+    // Filter for current year AND only up to the validated month
+    const validYearData = filteredData.filter(d =>
+        d.report_month.startsWith(targetYear) &&
+        new Date(d.report_month).getTime() <= new Date(validatedMonth).getTime()
+    );
 
     // Aggregate by month
     const monthlyTotals = new Map();
 
-    yearData.forEach(row => {
+    validYearData.forEach(row => {
         const date = new Date(row.report_month);
         const monthKey = `${date.getMonth() + 1}月`;
 
@@ -180,13 +185,15 @@ export async function getTopShortageCompanies(limit = 10, filters?: { industry?:
 
     if (filteredGlobal.length === 0) return [];
 
-    // Find latest month *within the filtered dataset*
-    // Actually we should find the latest month globally? 
-    // Usually "Current Shortage" means "Report Month = X". 
-    // If we filter by industry, we still want the latest month for that industry.
-    filteredGlobal.sort((a, b) => new Date(b.report_month).getTime() - new Date(a.report_month).getTime());
-    const latestMonth = filteredGlobal[0].report_month;
+    // Distinct companies count
+    const uniqueCompanyIds = new Set(filteredGlobal.map(d => d.company_id));
+    const total_enterprises = uniqueCompanyIds.size;
 
+    // THRESHOLD LOGIC
+    const validMonthInfo = getValidatedLatestMonth(allData, filteredGlobal, total_enterprises);
+    if (!validMonthInfo) return [];
+
+    const latestMonth = validMonthInfo.month;
     const currentMonthData = filteredGlobal.filter(d => d.report_month === latestMonth);
 
     return currentMonthData
@@ -207,15 +214,25 @@ export async function getTopRecruitingCompanies(limit = 10, filters?: { industry
     const allData = await fetchAllRawData();
     const filteredData = applyFilters(allData, filters);
 
-    // Filter for current/latest year to avoid summing across years
-    const currentYear = new Date().getFullYear().toString();
-    const allSortedDates = [...new Set(filteredData.map(d => d.report_month))].sort();
-    const latestAvailableDate = allSortedDates[allSortedDates.length - 1];
-    const targetYear = latestAvailableDate?.startsWith(currentYear) ? currentYear : (latestAvailableDate?.substring(0, 4) || currentYear);
-    const yearData = filteredData.filter(d => d.report_month.startsWith(targetYear));
+    // Distinct companies count
+    const uniqueCompanyIds = new Set(filteredData.map(d => d.company_id));
+    const total_enterprises = uniqueCompanyIds.size;
+
+    // THRESHOLD LOGIC
+    const validMonthInfo = getValidatedLatestMonth(allData, filteredData, total_enterprises);
+    if (!validMonthInfo) return [];
+
+    const validatedMonth = validMonthInfo.month;
+    const targetYear = new Date(validatedMonth).getFullYear().toString();
+
+    // Filter for current year AND only up to the validated month
+    const validYearData = filteredData.filter(d =>
+        d.report_month.startsWith(targetYear) &&
+        new Date(d.report_month).getTime() <= new Date(validatedMonth).getTime()
+    );
 
     const totals = new Map();
-    yearData.forEach((row: any) => {
+    validYearData.forEach((row: any) => {
         const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
         const name = comp?.name;
         if (!name) return;
@@ -235,14 +252,25 @@ export async function getTopTurnoverCompanies(limit = 10, filters?: { industry?:
     const filteredData = applyFilters(allData, filters);
 
     const totals = new Map();
-    // Filter for current/latest year to avoid summing across years
-    const currentYear = new Date().getFullYear().toString();
-    const allSortedDates = [...new Set(filteredData.map(d => d.report_month))].sort();
-    const latestAvailableDate = allSortedDates[allSortedDates.length - 1];
-    const targetYear = latestAvailableDate?.startsWith(currentYear) ? currentYear : (latestAvailableDate?.substring(0, 4) || currentYear);
-    const yearData = filteredData.filter(d => d.report_month.startsWith(targetYear));
 
-    yearData.forEach((row: any) => {
+    // Distinct companies count
+    const uniqueCompanyIds = new Set(filteredData.map(d => d.company_id));
+    const total_enterprises = uniqueCompanyIds.size;
+
+    // THRESHOLD LOGIC
+    const validMonthInfo = getValidatedLatestMonth(allData, filteredData, total_enterprises);
+    if (!validMonthInfo) return [];
+
+    const validatedMonth = validMonthInfo.month;
+    const targetYear = new Date(validatedMonth).getFullYear().toString();
+
+    // Filter for current year AND only up to the validated month
+    const validYearData = filteredData.filter(d =>
+        d.report_month.startsWith(targetYear) &&
+        new Date(d.report_month).getTime() <= new Date(validatedMonth).getTime()
+    );
+
+    validYearData.forEach((row: any) => {
         const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
         const name = comp?.name;
         if (!name) return;
@@ -266,17 +294,27 @@ export async function getTopGrowthCompanies(limit = 10, filters?: { industry?: s
     // 1. Net Growth (Dec - Jan)
     // 2. Start Employment (Jan, or calculated)
 
-    // Filter for current/latest year to avoid summing across years
-    const currentYear = new Date().getFullYear().toString();
-    const allSortedDates = [...new Set(filteredData.map(d => d.report_month))].sort();
-    const latestAvailableDate = allSortedDates[allSortedDates.length - 1];
-    const targetYear = latestAvailableDate?.startsWith(currentYear) ? currentYear : (latestAvailableDate?.substring(0, 4) || currentYear);
-    const yearData = filteredData.filter(d => d.report_month.startsWith(targetYear));
+    // Distinct companies count
+    const uniqueCompanyIds = new Set(filteredData.map(d => d.company_id));
+    const total_enterprises = uniqueCompanyIds.size;
+
+    // THRESHOLD LOGIC
+    const validMonthInfo = getValidatedLatestMonth(allData, filteredData, total_enterprises);
+    if (!validMonthInfo) return [];
+
+    const validatedMonth = validMonthInfo.month;
+    const targetYear = new Date(validatedMonth).getFullYear().toString();
+
+    // Filter for current year AND only up to the validated month
+    const validYearData = filteredData.filter(d =>
+        d.report_month.startsWith(targetYear) &&
+        new Date(d.report_month).getTime() <= new Date(validatedMonth).getTime()
+    );
 
     // Group by company
     const companyMap = new Map();
 
-    yearData.forEach((row: any) => {
+    validYearData.forEach((row: any) => {
         const comp = Array.isArray(row.companies) ? row.companies[0] : row.companies;
         const name = comp?.name;
         if (!name) return;
@@ -323,21 +361,62 @@ export async function getTopGrowthCompanies(limit = 10, filters?: { industry?: s
         .slice(0, limit);
 }
 
+// Helper for Threshold-Based Rollout
+function getValidatedLatestMonth(allData: any[], filteredData: any[], totalEnterprises: number) {
+    if (filteredData.length === 0) return null;
+
+    // Get all unique months in descending order
+    const allSortedDates = [...new Set(filteredData.map(d => d.report_month))]
+        .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
+    for (let i = 0; i < allSortedDates.length; i++) {
+        const candidateMonth = allSortedDates[i];
+
+        // Count how many distinct enterprises submitted for this candidate month
+        const monthData = filteredData.filter(d => d.report_month === candidateMonth);
+        const submittedCount = new Set(monthData.map(d => d.company_id)).size;
+
+        // If we have no historical total expected, just return the candidate
+        if (totalEnterprises === 0) return { month: candidateMonth, rate: 1, isFallback: false };
+
+        const rate = submittedCount / totalEnterprises;
+
+        // Threshold = 90%
+        if (rate >= 0.90 || i === allSortedDates.length - 1) {
+            return {
+                month: candidateMonth,
+                rate: rate,
+                isFallback: i > 0, // True if we skipped the absolute latest month
+                skippedMonth: i > 0 ? allSortedDates[0] : null,
+                latestMonthRate: i > 0 ? (new Set(filteredData.filter(d => d.report_month === allSortedDates[0]).map(d => d.company_id)).size / totalEnterprises) : rate
+            };
+        }
+    }
+    return null;
+}
+
 export async function getReportSummary(filters?: { industry?: string, town?: string }) {
     const allData = await fetchAllRawData();
     const filteredData = applyFilters(allData, filters);
 
     if (filteredData.length === 0) return null;
 
-    // Distinct companies count
+    // Distinct companies count (historical baseline for denominators)
     const uniqueCompanyIds = new Set(filteredData.map(d => d.company_id));
     const total_enterprises = uniqueCompanyIds.size;
 
-    // Filter for current year (2025) for cumulative stats
-    const currentYear = new Date().getFullYear().toString();
-    const allSortedDates = [...new Set(filteredData.map(d => d.report_month))].sort();
-    const latestAvailableDate = allSortedDates[allSortedDates.length - 1];
-    const targetYear = latestAvailableDate?.startsWith(currentYear) ? currentYear : (latestAvailableDate?.substring(0, 4) || currentYear);
+    // THRESHOLD LOGIC: Determine the 'valid' latest month
+    const validMonthInfo = getValidatedLatestMonth(allData, filteredData, total_enterprises);
+    if (!validMonthInfo) return null;
+
+    const validatedMonth = validMonthInfo.month;
+    const isFallback = validMonthInfo.isFallback;
+    const skippedMonthStr = validMonthInfo.skippedMonth ? `${new Date(validMonthInfo.skippedMonth).getMonth() + 1}月` : null;
+    const latestMonthRatePct = validMonthInfo.latestMonthRate ? Math.round(validMonthInfo.latestMonthRate * 100) : 100;
+
+    // Filter for current year (based on the validated month) for cumulative stats
+    const currentYearStr = new Date(validatedMonth).getFullYear().toString();
+    const targetYear = currentYearStr;
 
     const yearData = filteredData.filter(d => d.report_month.startsWith(targetYear));
 
@@ -349,10 +428,10 @@ export async function getReportSummary(filters?: { industry?: string, town?: str
         cumulative_resigned += r.resigned_total || 0;
     });
 
-    // Fetch latest month detailed data for current totals
-    filteredData.sort((a, b) => new Date(b.report_month).getTime() - new Date(a.report_month).getTime());
-    const latestMonth = filteredData[0].report_month;
-    const latestData = filteredData.filter(d => d.report_month === latestMonth);
+    // Fetch detailed data for the VALIDATED current month
+    const latestData = filteredData.filter(d => d.report_month === validatedMonth);
+    const latestMonthParsed = new Date(validatedMonth);
+    const latestMonthStr = `${latestMonthParsed.getMonth() + 1}月`;
 
     const current_total_employees = latestData.reduce((acc, curr) => acc + (curr.employees_total || 0), 0);
     const current_total_shortage = latestData.reduce((acc, curr) => acc + (curr.shortage_total || 0), 0);
@@ -506,6 +585,7 @@ export async function getReportSummary(filters?: { industry?: string, town?: str
         topTownsShare,
         // Data-driven fields
         dataYear: targetYear,
+        latestMonthStr,
         topTowns,
         topShortageIndustry,
         topTurnoverIndustry,
@@ -516,6 +596,10 @@ export async function getReportSummary(filters?: { industry?: string, town?: str
         topIndustrySharePct,
         talentGeneralTechPct,
         industryGrowthRates,
+        // Fallback Indicators
+        isFallback,
+        skippedMonthStr,
+        latestMonthRatePct
     };
 }
 
@@ -528,9 +612,15 @@ export async function getIndustryDistribution(filters?: { industry?: string, tow
 
     if (filteredData.length === 0) return [];
 
-    // Latest month only logic
-    filteredData.sort((a, b) => new Date(b.report_month).getTime() - new Date(a.report_month).getTime());
-    const latestMonth = filteredData[0].report_month;
+    // Distinct companies count
+    const uniqueCompanyIds = new Set(filteredData.map(d => d.company_id));
+    const total_enterprises = uniqueCompanyIds.size;
+
+    // THRESHOLD LOGIC
+    const validMonthInfo = getValidatedLatestMonth(allData, filteredData, total_enterprises);
+    if (!validMonthInfo) return [];
+
+    const latestMonth = validMonthInfo.month;
     const currentData = filteredData.filter(d => d.report_month === latestMonth);
 
     const industryStats = new Map<string, { value: number; shortage: number }>();
@@ -577,9 +667,15 @@ export async function getRegionalDistribution(filters?: { industry?: string, tow
 
     if (filteredData.length === 0) return [];
 
-    // Latest month only logic
-    filteredData.sort((a, b) => new Date(b.report_month).getTime() - new Date(a.report_month).getTime());
-    const latestMonth = filteredData[0].report_month;
+    // Distinct companies count
+    const uniqueCompanyIds = new Set(filteredData.map(d => d.company_id));
+    const total_enterprises = uniqueCompanyIds.size;
+
+    // THRESHOLD LOGIC
+    const validMonthInfo = getValidatedLatestMonth(allData, filteredData, total_enterprises);
+    if (!validMonthInfo) return [];
+
+    const latestMonth = validMonthInfo.month;
     const currentData = filteredData.filter(d => d.report_month === latestMonth);
 
     const townTotals = new Map<string, { value: number; shortage: number }>();

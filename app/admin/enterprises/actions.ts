@@ -38,25 +38,28 @@ export async function getEnterprises(page: number = 1, search: string = '') {
         return { companies: [], managers: [], totalCount: count || 0 };
     }
 
-    // Fetch related auth statuses only for the paginated companies
+    // Fetch related auth statuses and global managers concurrently
     const companyIds = companies.map(c => c.id);
-    const { data: users, error: uErr } = await supabaseAdmin
-        .from('auth_users')
-        .select('id, company_id, username, is_active, last_login')
-        .eq('role', 'ENTERPRISE')
-        .in('company_id', companyIds);
 
-    if (uErr) throw new Error(uErr.message);
+    const [usersResp, managersResp] = await Promise.all([
+        supabaseAdmin
+            .from('auth_users')
+            .select('id, company_id, username, is_active, last_login')
+            .eq('role', 'ENTERPRISE')
+            .in('company_id', companyIds),
 
-    const userMap = new Map(users.map(u => [u.company_id, u]));
+        supabaseAdmin
+            .from('auth_users')
+            .select('id, username')
+            .eq('role', 'TOWN_ADMIN')
+            .eq('is_active', true)
+    ]);
 
-    const { data: managers, error: mErr } = await supabaseAdmin
-        .from('auth_users')
-        .select('id, username')
-        .eq('role', 'TOWN_ADMIN')
-        .eq('is_active', true);
+    if (usersResp.error) throw new Error(usersResp.error.message);
+    if (managersResp.error) throw new Error(managersResp.error.message);
 
-    if (mErr) throw new Error(mErr.message);
+    const userMap = new Map((usersResp.data || []).map(u => [u.company_id, u]));
+    const managers = managersResp.data || [];
 
     return {
         companies: companies.map(c => ({
