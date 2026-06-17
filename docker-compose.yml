@@ -62,9 +62,21 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.http.conf:/etc/nginx/nginx.http.conf:ro
+      - ./nginx/nginx.https.conf:/etc/nginx/nginx.https.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./nginx/logs:/var/log/nginx
+    entrypoint: >
+      /bin/sh -c "
+      if [ -f /etc/nginx/ssl/fullchain.pem ] && [ -f /etc/nginx/ssl/privkey.pem ]; then
+        echo '[NGINX] SSL certificates found. Activating HTTPS configuration...';
+        cp /etc/nginx/nginx.https.conf /etc/nginx/nginx.conf;
+      else
+        echo '[NGINX] SSL certificates NOT found. Falling back to HTTP configuration...';
+        cp /etc/nginx/nginx.http.conf /etc/nginx/nginx.conf;
+      fi;
+      exec nginx -g 'daemon off;'
+      "
     depends_on:
       - app
     networks:
