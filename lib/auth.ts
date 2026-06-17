@@ -35,8 +35,15 @@ export async function login(user: any) {
     const expires = new Date(Date.now() + 10 * 60 * 60 * 1000); // 10h
     const session = await encrypt({ user, expires });
 
+    const isProd = process.env.NODE_ENV === 'production';
     const cookieStore = await cookies();
-    cookieStore.set('session', session, { expires, httpOnly: true, sameSite: 'lax', path: '/' });
+    cookieStore.set('session', session, { 
+        expires, 
+        httpOnly: true, 
+        sameSite: 'lax', 
+        path: '/',
+        secure: isProd // 本地HTTP时为false，云端HTTPS时自动为true
+    });
 }
 
 export async function logout() {
