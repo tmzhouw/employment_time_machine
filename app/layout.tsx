@@ -19,7 +19,7 @@ const notoSerif = Noto_Serif_SC({
 });
 
 export const metadata: Metadata = {
-  title: "2025 Enterprise Employment Time-Machine",
+  title: "2026 Enterprise Employment Time-Machine",
   description: "Tianmen City Employment Analysis Report System",
 };
 
@@ -32,6 +32,7 @@ export default function RootLayout({
     <html lang="zh-CN" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoSerif.variable} antialiased`}
+        suppressHydrationWarning
       >
         {children}
       </body>
