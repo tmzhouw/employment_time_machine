@@ -2175,6 +2175,7 @@ export async function getTalentAnalysis() {
             "general": "普工",
             "tech": "技工",
             "mgmt": "管理/销售",
+            "management": "管理/销售",
             "sales": "管理/销售",
             "other": "其他"
         };
